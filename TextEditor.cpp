@@ -36,7 +36,7 @@ TextEditor::TextEditor()
 	mPalette[(int)TokenType::CharLiteral] = 0xff70a0e0;
 	mPalette[(int)TokenType::Preprocessor] = 0xff409090;
 	mPalette[(int)TokenType::PreprocIdentifier] = 0xffc040a0;
-	mPalette[(int)TokenType::Punctuation] = 0xffc0c0c0;
+	mPalette[(int)TokenType::Punctuation] = 0xffffffff;
 
 	SetLanguageDefinition(LanguageDefinition::HLSL());
 }
@@ -481,10 +481,14 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			if (mState.mCursorPosition.mLine == lineNo)
 			{
 				auto focused = ImGui::IsWindowFocused();
-				auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
-				auto end = ImVec2(start.x + contentSize.x + scrollX, start.y + mCharAdvance.y);
-				drawList->AddRectFilled(start, end, focused ? 0x40000000 : 0x40808080);
-				drawList->AddRect(start, end, 0x40a0a0a0, 1.0f);
+
+				if (!HasSelection())
+				{
+					auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
+					auto end = ImVec2(start.x + contentSize.x + scrollX, start.y + mCharAdvance.y);
+					drawList->AddRectFilled(start, end, focused ? 0x40000000 : 0x40808080);
+					drawList->AddRect(start, end, 0x40a0a0a0, 1.0f);
+				}
 
 				int cx = TextDistanceToLineStart(mState.mCursorPosition);
 
