@@ -154,7 +154,7 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 			firstLine.insert(firstLine.end(), lastLine.begin(), lastLine.end());
 
 		if (aStart.mLine < aEnd.mLine)
-			mLines.erase(mLines.begin() + aStart.mLine + 1, mLines.begin() + aEnd.mLine + 1);
+			RemoveLine(aStart.mLine + 1, aEnd.mLine + 1);
 	}
 }
 
@@ -177,13 +177,13 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 		{
 			if (aWhere.mColumn < (int)line.size())
 			{
-				auto& newLine = *mLines.insert(mLines.begin() + aWhere.mLine + 1, Line());
+				auto& newLine = InsertLine(aWhere.mLine + 1);
 				newLine.insert(newLine.begin(), line.begin() + aWhere.mColumn, line.end());
 				line.erase(line.begin() + aWhere.mColumn, line.end());
 			}
 			else
 			{
-				mLines.insert(mLines.begin() + aWhere.mLine + 1, Line());
+				InsertLine(aWhere.mLine + 1);
 			}
 			++aWhere.mLine;
 			aWhere.mColumn = 0;
@@ -284,6 +284,71 @@ bool TextEditor::IsOnWordBoundary(const Coordinates & aAt)
 		return true;
 
 	return line[aAt.mColumn].mColorIndex != line[aAt.mColumn - 1].mColorIndex;
+}
+
+void TextEditor::RemoveLine(int aStart, int aEnd)
+{
+	ErrorMarkers etmp;
+	for (auto& i : mErrorMarkers)
+	{
+		ErrorMarkers::value_type e(i.first >= aStart ? i.first - 1 : i.first, i.second);
+		if (e.first >= aStart && e.first <= aEnd)
+			continue;
+		etmp.insert(e);
+	}
+	mErrorMarkers = std::move(etmp);
+
+	Breakpoints btmp;
+	for (auto i : mBreakpoints)
+	{
+		if (i >= aStart && i <= aEnd)
+			continue;
+		btmp.insert(i >= aStart ? i - 1 : i);
+	}
+	mBreakpoints = std::move(btmp);
+
+	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
+}
+
+void TextEditor::RemoveLine(int aIndex)
+{
+	ErrorMarkers etmp;
+	for (auto& i : mErrorMarkers)
+	{
+		ErrorMarkers::value_type e(i.first >= aIndex ? i.first - 1 : i.first, i.second);
+		if (e.first == aIndex)
+			continue;
+		etmp.insert(e);
+	}
+	mErrorMarkers = std::move(etmp);
+
+	Breakpoints btmp;
+	for (auto i : mBreakpoints)
+	{
+		if (i == aIndex)
+			continue;
+		btmp.insert(i >= aIndex ? i - 1 : i);
+	}
+	mBreakpoints = std::move(btmp);
+
+	mLines.erase(mLines.begin() + aIndex);
+}
+
+TextEditor::Line& TextEditor::InsertLine(int aIndex)
+{
+	auto& result = *mLines.insert(mLines.begin() + aIndex, Line());
+
+	ErrorMarkers etmp;
+	for (auto& i : mErrorMarkers)
+		etmp.insert(ErrorMarkers::value_type(i.first >= aIndex ? i.first + 1 : i.first, i.second));
+	mErrorMarkers = std::move(etmp);
+
+	Breakpoints btmp;
+	for (auto i : mBreakpoints)
+		btmp.insert(i >= aIndex ? i + 1 : i);
+	mBreakpoints = std::move(btmp);
+
+	return result;
 }
 
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
@@ -449,17 +514,17 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			static char buf[16];
 
-			if (mBreakpoints.find(lineNo) != mBreakpoints.end())
+			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
 			{
 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, 0x400000ff);
+				drawList->AddRectFilled(lineStartScreenPos, end, 0x40f08000);
 			}
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
 			if (errorIt != mErrorMarkers.end())
 			{
 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, 0xa00020ff);
+				drawList->AddRectFilled(lineStartScreenPos, end, 0x800020ff);
 
 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
 				{
@@ -602,7 +667,7 @@ void TextEditor::EnterCharacter(Char aChar)
 
 	if (aChar == '\n')
 	{
-		mLines.insert(mLines.begin() + coord.mLine + 1, Line());
+		InsertLine(coord.mLine + 1);
 		auto& newLine = mLines[coord.mLine + 1];
 		newLine.insert(newLine.begin(), line.begin() + coord.mColumn, line.end());
 		line.erase(line.begin() + coord.mColumn, line.begin() + line.size());
@@ -959,7 +1024,7 @@ void TextEditor::Delete()
 
 			auto& nextLine = mLines[pos.mLine + 1];
 			line.insert(line.end(), nextLine.begin(), nextLine.end());
-			mLines.erase(mLines.begin() + pos.mLine + 1);
+			RemoveLine(pos.mLine + 1);
 		}
 		else
 		{
@@ -996,7 +1061,7 @@ void TextEditor::BackSpace()
 			auto& prevLine = mLines[mState.mCursorPosition.mLine - 1];
 			auto prevSize = prevLine.size();
 			prevLine.insert(prevLine.end(), line.begin(), line.end());
-			mLines.erase(mLines.begin() + mState.mCursorPosition.mLine);
+			RemoveLine(mState.mCursorPosition.mLine);
 			--mState.mCursorPosition.mLine;
 			mState.mCursorPosition.mColumn = prevSize;
 		}

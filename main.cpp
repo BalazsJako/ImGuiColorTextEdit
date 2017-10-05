@@ -166,6 +166,18 @@ int main(int, char**)
 
 	editor.SetLanguageDefinition(lang);
 
+	// error markers
+	TextEditor::ErrorMarkers markers;
+	markers.insert(std::make_pair<int, std::string>(14, "Example error here:\nInclude file not found: \"TextEditor.h\""));
+	markers.insert(std::make_pair<int, std::string>(41, "Another example error"));
+	editor.SetErrorMarkers(markers);
+
+	// "breakpoint" markers
+	//TextEditor::Breakpoints bpts;
+	//bpts.insert(24);
+	//bpts.insert(47);
+	//editor.SetBreakpoints(bpts);
+
 	std::ifstream t("main.cpp");
 	std::string str((std::istreambuf_iterator<char>(t)),
 		std::istreambuf_iterator<char>());
@@ -189,12 +201,14 @@ int main(int, char**)
 
 		auto cpos = editor.GetCursorPosition();
 		ImGui::Begin("Text Editor", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
-		ImGui::BeginMenuBar();
-		ImGui::EndMenuBar();
+		if (ImGui::BeginMenuBar())
+		{
+			ImGui::EndMenuBar();
+		}
 		ImGui::Text("%6d/%-6d %6d lines  %s %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
 			editor.IsOverwrite() ? "Ovr" : "Ins",
 			editor.CanUndo() ? "*" : " ",
-			editor.GetLanguageDefinition().mName.c_str(), "TestFile.txt");
+			editor.GetLanguageDefinition().mName.c_str(), "ExampleFileName.txt");
 
 		editor.Render("TextEditor");
 		ImGui::End();

@@ -29,6 +29,18 @@ public:
 		Max
 	};
 
+	struct Breakpoint
+	{
+		int mLine;
+		bool mEnabled;
+		std::string mCondition;
+
+		Breakpoint()
+			: mLine(-1)
+			, mEnabled(false)
+		{}
+	};
+
 	typedef std::string String;
 	typedef std::unordered_set<std::string> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
@@ -137,6 +149,7 @@ public:
 	void SetPalette(const Palette& aValue);
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
+	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -246,6 +259,9 @@ private:
 	Coordinates FindWordStart(const Coordinates& aFrom);
 	Coordinates FindWordEnd(const Coordinates& aFrom);
 	bool IsOnWordBoundary(const Coordinates& aAt);
+	void RemoveLine(int aStart, int aEnd);
+	void RemoveLine(int aIndex);
+	Line& InsertLine(int aIndex);
 
 	float mLineSpacing;
 	Lines mLines;
