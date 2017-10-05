@@ -136,17 +136,13 @@ int main(int, char**)
 	// Load Fonts
 	// (there is a default font, this is only if you want to change it. see extra_fonts/README.txt for more details)
 	ImGuiIO& io = ImGui::GetIO();
-	//io.Fonts->AddFontDefault();
-	//io.Fonts->AddFontFromFileTTF("../../extra_fonts/Cousine-Regular.ttf", 15.0f);
-	//io.Fonts->AddFontFromFileTTF("../../extra_fonts/DroidSans.ttf", 16.0f);
-	//io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyClean.ttf", 13.0f);
-	//io.Fonts->AddFontFromFileTTF("../../extra_fonts/ProggyTiny.ttf", 10.0f);
-	//io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
 
 	bool show_test_window = true;
 	bool show_another_window = false;
 	ImVec4 clear_col = ImColor(114, 144, 154);
 
+	///////////////////////////////////////////////////////////////////////
+	// TEXT EDITOR SAMPLE
 	TextEditor editor;
 	auto lang = TextEditor::LanguageDefinition::CPlusPlus();
 
@@ -164,7 +160,7 @@ int main(int, char**)
 		"HRESULT", "LPRESULT","D3D11_RENDER_TARGET_VIEW_DESC", "HWND", "DXGI_SWAP_CHAIN_DESC","MSG","LRESULT","WPARAM", "LPARAM","UINT","LPVOID",
 		"ID3D11Device", "ID3D11DeviceContext", "ID3D11Buffer", "ID3D11Buffer", "ID3D10Blob", "ID3D11VertexShader", "ID3D11InputLayout", "ID3D11Buffer",
 		"ID3D10Blob", "ID3D11PixelShader", "ID3D11SamplerState", "ID3D11ShaderResourceView", "ID3D11RasterizerState", "ID3D11BlendState", "ID3D11DepthStencilState",
-		"IDXGISwapChain", "ID3D11RenderTargetView", "ID3D11Texture2D", "", "", "", "", "", "", "", "", };
+		"IDXGISwapChain", "ID3D11RenderTargetView", "ID3D11Texture2D", };
 	for (auto i : identifiers)
 		lang.mIdentifiers.insert(i);
 
@@ -193,6 +189,8 @@ int main(int, char**)
 
 		auto cpos = editor.GetCursorPosition();
 		ImGui::Begin("Text Editor", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
+		ImGui::BeginMenuBar();
+		ImGui::EndMenuBar();
 		ImGui::Text("%6d/%-6d %6d lines  %s %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
 			editor.IsOverwrite() ? "Ovr" : "Ins",
 			editor.CanUndo() ? "*" : " ",
