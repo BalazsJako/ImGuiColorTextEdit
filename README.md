@@ -16,7 +16,7 @@ Main features are:
  - supports large files: there is no explicit limit set on file size or number of lines, performance is not affected when large files are loaded (except syntax coloring, see below)
 
 Known issues:
- - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers might help resolve this problem
+ - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
  - 8 bit character only, no Unicode or Utf support (yet)
  - color palette is hardwired into the code atm....
  - there's no find/replace 
