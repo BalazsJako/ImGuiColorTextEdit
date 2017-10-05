@@ -21,3 +21,4 @@ Known issues:
  - color palette is hardwired into the code atm....
  - there's no find/replace 
 
+Don't forget to post your screenshots if you use this little piece of software in order to keep me motivated. :)
