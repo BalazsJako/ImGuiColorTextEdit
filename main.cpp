@@ -170,15 +170,22 @@ int main(int, char**)
 
 	// set your own identifiers
 	static const char* identifiers[] = {
-		"HRESULT", "LPRESULT","D3D11_RENDER_TARGET_VIEW_DESC", "HWND", "DXGI_SWAP_CHAIN_DESC","MSG","LRESULT","WPARAM", "LPARAM","UINT","LPVOID",
+		"HWND", "HRESULT", "LPRESULT","D3D11_RENDER_TARGET_VIEW_DESC", "DXGI_SWAP_CHAIN_DESC","MSG","LRESULT","WPARAM", "LPARAM","UINT","LPVOID",
 		"ID3D11Device", "ID3D11DeviceContext", "ID3D11Buffer", "ID3D11Buffer", "ID3D10Blob", "ID3D11VertexShader", "ID3D11InputLayout", "ID3D11Buffer",
 		"ID3D10Blob", "ID3D11PixelShader", "ID3D11SamplerState", "ID3D11ShaderResourceView", "ID3D11RasterizerState", "ID3D11BlendState", "ID3D11DepthStencilState",
 		"IDXGISwapChain", "ID3D11RenderTargetView", "ID3D11Texture2D", };
-	for (auto i : identifiers)
+	static const char* idecls[] = 
+	{
+		"typedef HWND_* HWND", "typedef long HRESULT", "typedef long* LPRESULT", "struct D3D11_RENDER_TARGET_VIEW_DESC", "struct DXGI_SWAP_CHAIN_DESC",
+		"typedef tagMSG MSG\n * Message structure","typedef LONG_PTR LRESULT","WPARAM", "LPARAM","UINT","LPVOID",
+		"ID3D11Device", "ID3D11DeviceContext", "ID3D11Buffer", "ID3D11Buffer", "ID3D10Blob", "ID3D11VertexShader", "ID3D11InputLayout", "ID3D11Buffer",
+		"ID3D10Blob", "ID3D11PixelShader", "ID3D11SamplerState", "ID3D11ShaderResourceView", "ID3D11RasterizerState", "ID3D11BlendState", "ID3D11DepthStencilState",
+		"IDXGISwapChain", "ID3D11RenderTargetView", "ID3D11Texture2D", };
+	for (int i = 0; i < sizeof(identifiers) / sizeof(identifiers[0]); ++i)
 	{
 		TextEditor::Identifier id;
-		id.mDeclaration = std::string(i) + ": some built-in identifier";
-		lang.mIdentifiers.insert(std::make_pair(std::string(i), id));
+		id.mDeclaration = std::string(idecls[i]);
+		lang.mIdentifiers.insert(std::make_pair(std::string(identifiers[i]), id));
 	}
 	editor.SetLanguageDefinition(lang);
 
@@ -211,7 +218,8 @@ int main(int, char**)
 		}
 		ImGui_ImplDX11_NewFrame();
 
-		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(.13f, .13f, .13f, 1.0f));
+		//ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(.07f, .07f, .07f, 1.0f));
+		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(.07f, .07f, .07f, 1.0f));
 		//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.0f, 2.0f));
 
 		auto cpos = editor.GetCursorPosition();
