@@ -351,6 +351,25 @@ TextEditor::Line& TextEditor::InsertLine(int aIndex)
 	return result;
 }
 
+std::string TextEditor::GetWordUnderCursor()
+{
+	auto c = GetCursorPosition();
+	return GetWordAt(c);
+}
+
+std::string TextEditor::GetWordAt(const Coordinates & aCoords)
+{
+	auto start = FindWordStart(aCoords);
+	auto end = FindWordEnd(aCoords);
+
+	std::string r;
+
+	for (auto it = start; it < end; Advance(it))
+		r.push_back(mLines[it.mLine][it.mColumn].mChar);
+
+	return r;
+}
+
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
@@ -602,6 +621,28 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			textScreenPos.x = lineStartScreenPos.x + mCharAdvance.x * cTextStart;
 			textScreenPos.y = lineStartScreenPos.y;
 			++lineNo;
+		}
+
+		auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
+		if (!id.empty())
+		{
+			auto it = mLanguageDefinition.mIdentifiers.find(id);
+			if (it != mLanguageDefinition.mIdentifiers.end())
+			{
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted(it->second.mDeclaration.c_str());
+				ImGui::EndTooltip();
+			}
+			else
+			{
+				auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
+				if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+				{
+					ImGui::BeginTooltip();
+					ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+					ImGui::EndTooltip();
+				}
+			}
 		}
 	}
 
@@ -1489,7 +1530,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 			"std", "string", "vector", "map", "unordered_map", "set", "unordered_set", "min", "max"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("//.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("[ \t]*#[ \\t]*[a-zA-Z_]+", TokenType::Preprocessor));
@@ -1556,7 +1601,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::HLSL()
 			"tex3D", "tex3D", "tex3Dbias", "tex3Dgrad", "tex3Dlod", "tex3Dproj", "texCUBE", "texCUBE", "texCUBEbias", "texCUBEgrad", "texCUBElod", "texCUBEproj", "transpose", "trunc"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("//.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("[ \t]*#[ \\t]*[a-zA-Z_]+", TokenType::Preprocessor));
@@ -1600,7 +1649,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
 			"ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("//.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("[ \t]*#[ \\t]*[a-zA-Z_]+", TokenType::Preprocessor));
@@ -1644,7 +1697,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
 			"ispunct", "isspace", "isupper", "kbhit", "log10", "log2", "log", "memcmp", "modf", "pow", "putchar", "putenv", "puts", "rand", "remove", "rename", "sinh", "sqrt", "srand", "strcat", "strcmp", "strerror", "time", "tolower", "toupper"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("//.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("[ \t]*#[ \\t]*[a-zA-Z_]+", TokenType::Preprocessor));
@@ -1695,7 +1752,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::SQL()
 			"ABS",  "ACOS",  "ADD_MONTHS",  "ASCII",  "ASCIISTR",  "ASIN",  "ATAN",  "ATAN2",  "AVG",  "BFILENAME",  "BIN_TO_NUM",  "BITAND",  "CARDINALITY",  "CASE",  "CAST",  "CEIL",			"CHARTOROWID",  "CHR",  "COALESCE",  "COMPOSE",  "CONCAT",  "CONVERT",  "CORR",  "COS",  "COSH",  "COUNT",  "COVAR_POP",  "COVAR_SAMP",  "CUME_DIST",  "CURRENT_DATE",			"CURRENT_TIMESTAMP",  "DBTIMEZONE",  "DECODE",  "DECOMPOSE",  "DENSE_RANK",  "DUMP",  "EMPTY_BLOB",  "EMPTY_CLOB",  "EXP",  "EXTRACT",  "FIRST_VALUE",  "FLOOR",  "FROM_TZ",  "GREATEST",			"GROUP_ID",  "HEXTORAW",  "INITCAP",  "INSTR",  "INSTR2",  "INSTR4",  "INSTRB",  "INSTRC",  "LAG",  "LAST_DAY",  "LAST_VALUE",  "LEAD",  "LEAST",  "LENGTH",  "LENGTH2",  "LENGTH4",			"LENGTHB",  "LENGTHC",  "LISTAGG",  "LN",  "LNNVL",  "LOCALTIMESTAMP",  "LOG",  "LOWER",  "LPAD",  "LTRIM",  "MAX",  "MEDIAN",  "MIN",  "MOD",  "MONTHS_BETWEEN",  "NANVL",  "NCHR",			"NEW_TIME",  "NEXT_DAY",  "NTH_VALUE",  "NULLIF",  "NUMTODSINTERVAL",  "NUMTOYMINTERVAL",  "NVL",  "NVL2",  "POWER",  "RANK",  "RAWTOHEX",  "REGEXP_COUNT",  "REGEXP_INSTR",			"REGEXP_REPLACE",  "REGEXP_SUBSTR",  "REMAINDER",  "REPLACE",  "ROUND",  "ROWNUM",  "RPAD",  "RTRIM",  "SESSIONTIMEZONE",  "SIGN",  "SIN",  "SINH",			"SOUNDEX",  "SQRT",  "STDDEV",  "SUBSTR",  "SUM",  "SYS_CONTEXT",  "SYSDATE",  "SYSTIMESTAMP",  "TAN",  "TANH",  "TO_CHAR",  "TO_CLOB",  "TO_DATE",  "TO_DSINTERVAL",  "TO_LOB",			"TO_MULTI_BYTE",  "TO_NCLOB",  "TO_NUMBER",  "TO_SINGLE_BYTE",  "TO_TIMESTAMP",  "TO_TIMESTAMP_TZ",  "TO_YMINTERVAL",  "TRANSLATE",  "TRIM",  "TRUNC", "TZ_OFFSET",  "UID",  "UPPER",			"USER",  "USERENV",  "VAR_POP",  "VAR_SAMP",  "VARIANCE",  "VSIZE "
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("\\-\\-.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("L?\\\"(\\\\.|[^\\\"])*\\\"", TokenType::String));
@@ -1740,7 +1801,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::AngelScript()
 			"complex", "opEquals", "opAddAssign", "opSubAssign", "opMulAssign", "opDivAssign", "opAdd", "opSub", "opMul", "opDiv"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("//.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("L?\\\"(\\\\.|[^\\\"])*\\\"", TokenType::String));
@@ -1790,7 +1855,11 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::Lua()
 			 "coroutine", "table", "io", "os", "string", "utf8", "bit32", "math", "debug", "package"
 		};
 		for (auto& k : identifiers)
-			langDef.mIdentifiers.insert(k);
+		{
+			Identifier id;
+			id.mDeclaration = "Built-in function";
+			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+		}
 
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("\\-\\-.*", TokenType::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, TokenType>("L?\\\"(\\\\.|[^\\\"])*\\\"", TokenType::String));

@@ -146,14 +146,27 @@ int main(int, char**)
 	TextEditor editor;
 	auto lang = TextEditor::LanguageDefinition::CPlusPlus();
 
-	// set your own known preprocessor nanmes
+	// set your own known preprocessor symbols...
 	static const char* ppnames[] = { "NULL", "PM_REMOVE",
-		"ZeroMemory", "DXGI_SWAP_EFFECT_DISCARD", "D3D_FEATURE_LEVEL", "D3D_DRIVER_TYPE_HARDWARE", "WINAPI","D3D11_SDK_VERSION",
-		"WM_SIZE", "SIZE_MINIMIZED", "SC_KEYMENU", "WNDCLASSEX", "CS_CLASSDC", "WM_SIZE", "WM_SYSCOMMAND", "WM_DESTROY", "IDC_ARROW", "WS_OVERLAPPEDWINDOW",
-		"WM_QUIT", "D3D11_RTV_DIMENSION_TEXTURE2D", "DIRECTINPUT_VERSION", "SW_SHOWDEFAULT", "S_OK", "E_FAIL", "D3D_FEATURE_LEVEL_11_0",
-		"DXGI_FORMAT_R8G8B8A8_UNORM", "DXGI_USAGE_RENDER_TARGET_OUTPUT", "DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH", "DXGI_FORMAT_R8G8B8A8_UNORM", "TRUE" };
-	for (auto i : ppnames)
-		lang.mPreprocIdentifiers.insert(i);
+		"ZeroMemory", "DXGI_SWAP_EFFECT_DISCARD", "D3D_FEATURE_LEVEL", "D3D_DRIVER_TYPE_HARDWARE", "WINAPI","D3D11_SDK_VERSION" };
+	// ... and their corresponding values
+	static const char* ppvalues[] = { 
+		"#define NULL ((void*)0)", 
+		"#define PM_REMOVE (0x0001)",
+		"Microsoft's own memory zapper function\n(which is a macro actually)\nvoid ZeroMemory(\n\t[in] PVOID  Destination,\n\t[in] SIZE_T Length\n); ", 
+		"enum DXGI_SWAP_EFFECT::DXGI_SWAP_EFFECT_DISCARD = 0", 
+		"enum D3D_FEATURE_LEVEL", 
+		"enum D3D_DRIVER_TYPE::D3D_DRIVER_TYPE_HARDWARE  = ( D3D_DRIVER_TYPE_UNKNOWN + 1 )",
+		"#define WINAPI __stdcall",
+		"#define D3D11_SDK_VERSION (7)"
+		};
+
+	for (int i = 0; i < sizeof(ppnames) / sizeof(ppnames[0]); ++i)
+	{
+		TextEditor::Identifier id;
+		id.mDeclaration = ppvalues[i];
+		lang.mPreprocIdentifiers.insert(std::make_pair(std::string(ppnames[i]), id));
+	}
 
 	// set your own identifiers
 	static const char* identifiers[] = {
@@ -162,8 +175,11 @@ int main(int, char**)
 		"ID3D10Blob", "ID3D11PixelShader", "ID3D11SamplerState", "ID3D11ShaderResourceView", "ID3D11RasterizerState", "ID3D11BlendState", "ID3D11DepthStencilState",
 		"IDXGISwapChain", "ID3D11RenderTargetView", "ID3D11Texture2D", };
 	for (auto i : identifiers)
-		lang.mIdentifiers.insert(i);
-
+	{
+		TextEditor::Identifier id;
+		id.mDeclaration = std::string(i) + ": some built-in identifier";
+		lang.mIdentifiers.insert(std::make_pair(std::string(i), id));
+	}
 	editor.SetLanguageDefinition(lang);
 
 	// error markers
@@ -179,8 +195,7 @@ int main(int, char**)
 	//editor.SetBreakpoints(bpts);
 
 	std::ifstream t("main.cpp");
-	std::string str((std::istreambuf_iterator<char>(t)),
-		std::istreambuf_iterator<char>());
+	std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 	editor.SetText(str);
 
 	// Main loop
@@ -197,7 +212,7 @@ int main(int, char**)
 		ImGui_ImplDX11_NewFrame();
 
 		ImGui::PushStyleColor(ImGuiCol_FrameBg, ImVec4(.13f, .13f, .13f, 1.0f));
-		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+		//ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(2.0f, 2.0f));
 
 		auto cpos = editor.GetCursorPosition();
 		ImGui::Begin("Text Editor", nullptr, ImGuiWindowFlags_HorizontalScrollbar);
@@ -205,6 +220,15 @@ int main(int, char**)
 		{
 			ImGui::EndMenuBar();
 		}
+
+		if (ImGui::Button("  Save  "))
+		{
+			auto t = editor.GetText();
+			/// save text....
+		}
+		
+		ImGui::SameLine();
+
 		ImGui::Text("%6d/%-6d %6d lines  %s %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
 			editor.IsOverwrite() ? "Ovr" : "Ins",
 			editor.CanUndo() ? "*" : " ",
@@ -213,7 +237,7 @@ int main(int, char**)
 		editor.Render("TextEditor");
 		ImGui::End();
 
-		ImGui::PopStyleVar();
+		//ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
 
 		// Rendering

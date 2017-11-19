@@ -40,56 +40,12 @@ public:
 			, mEnabled(false)
 		{}
 	};
-
-	typedef std::string String;
-	typedef std::unordered_set<std::string> Identifiers;
-	typedef std::unordered_set<std::string> Keywords;
-	typedef std::map<int, std::string> ErrorMarkers;
-	typedef std::unordered_set<int> Breakpoints;
-	typedef ImU32 Palette[(unsigned)TokenType::Max];
-	typedef char Char;
 	
-	struct Glyph
-	{
-		Char mChar;
-		TokenType mColorIndex : 7;
-		bool mMultiLineComment : 1;
-
-		Glyph(Char aChar, TokenType aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
-	};
-
-	typedef std::vector<Glyph> Line;
-	typedef std::vector<Line> Lines;
-
-	struct LanguageDefinition
-	{
-		typedef std::pair<std::string, TokenType> TokenRegexString;
-		typedef std::vector<TokenRegexString> TokenRegexStrings;
-
-		std::string mName;
-		Keywords mKeywords;
-		Identifiers mIdentifiers;
-		Identifiers mPreprocIdentifiers;
-		std::string mCommentStart, mCommentEnd;
-
-		TokenRegexStrings mTokenRegexStrings;
-
-		bool mCaseSensitive;
-
-		static LanguageDefinition CPlusPlus();
-		static LanguageDefinition HLSL();
-		static LanguageDefinition GLSL();
-		static LanguageDefinition C();
-		static LanguageDefinition SQL();
-		static LanguageDefinition AngelScript();
-		static LanguageDefinition Lua();
-	};
-
 	struct Coordinates
 	{
 		int mLine, mColumn;
 		Coordinates() : mLine(0), mColumn(0) {}
-		Coordinates(int aLine, int aColumn) : mLine(aLine), mColumn(aColumn) 
+		Coordinates(int aLine, int aColumn) : mLine(aLine), mColumn(aColumn)
 		{
 			assert(aLine >= 0);
 			assert(aColumn >= 0);
@@ -137,6 +93,56 @@ public:
 				return mLine > o.mLine;
 			return mColumn >= o.mColumn;
 		}
+	};
+
+	struct Identifier
+	{
+		Coordinates mLocation;
+		std::string mDeclaration;
+	};
+
+	typedef std::string String;
+	typedef std::unordered_map<std::string, Identifier> Identifiers;
+	typedef std::unordered_set<std::string> Keywords;
+	typedef std::map<int, std::string> ErrorMarkers;
+	typedef std::unordered_set<int> Breakpoints;
+	typedef ImU32 Palette[(unsigned)TokenType::Max];
+	typedef char Char;
+	
+	struct Glyph
+	{
+		Char mChar;
+		TokenType mColorIndex : 7;
+		bool mMultiLineComment : 1;
+
+		Glyph(Char aChar, TokenType aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
+	};
+
+	typedef std::vector<Glyph> Line;
+	typedef std::vector<Line> Lines;
+
+	struct LanguageDefinition
+	{
+		typedef std::pair<std::string, TokenType> TokenRegexString;
+		typedef std::vector<TokenRegexString> TokenRegexStrings;
+
+		std::string mName;
+		Keywords mKeywords;
+		Identifiers mIdentifiers;
+		Identifiers mPreprocIdentifiers;
+		std::string mCommentStart, mCommentEnd;
+
+		TokenRegexStrings mTokenRegexStrings;
+
+		bool mCaseSensitive;
+
+		static LanguageDefinition CPlusPlus();
+		static LanguageDefinition HLSL();
+		static LanguageDefinition GLSL();
+		static LanguageDefinition C();
+		static LanguageDefinition SQL();
+		static LanguageDefinition AngelScript();
+		static LanguageDefinition Lua();
 	};
 
 	TextEditor();
@@ -262,6 +268,8 @@ private:
 	void RemoveLine(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
+	std::string GetWordUnderCursor();
+	std::string GetWordAt(const Coordinates& aCoords);
 
 	float mLineSpacing;
 	Lines mLines;
