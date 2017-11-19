@@ -165,10 +165,12 @@ public:
 	int GetTotalLines() const { return (int)mLines.size(); }
 	bool IsOverwrite() const { return mOverwrite; }
 
+	void SetReadOnly(bool aValue);
+	bool IsReadOnly() const { return mReadOnly; }
+
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
 
-	void EnterCharacter(Char aChar);
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
 	void DeleteSelection();
@@ -181,9 +183,6 @@ public:
 	void MoveBottom(bool aSelect = false);
 	void MoveHome(bool aSelect = false);
 	void MoveEnd(bool aSelect = false);
-
-	void Delete();
-	void BackSpace();
 
 	void SetSelectionStart(const Coordinates& aPosition);
 	void SetSelectionEnd(const Coordinates& aPosition);
@@ -262,14 +261,17 @@ private:
 	int InsertTextAt(Coordinates& aWhere, const char* aValue);
 	void AddUndo(UndoRecord& aValue);
 	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
-	Coordinates FindWordStart(const Coordinates& aFrom);
-	Coordinates FindWordEnd(const Coordinates& aFrom);
-	bool IsOnWordBoundary(const Coordinates& aAt);
+	Coordinates FindWordStart(const Coordinates& aFrom) const;
+	Coordinates FindWordEnd(const Coordinates& aFrom) const;
+	bool IsOnWordBoundary(const Coordinates& aAt) const;
 	void RemoveLine(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
-	std::string GetWordUnderCursor();
-	std::string GetWordAt(const Coordinates& aCoords);
+	void EnterCharacter(Char aChar);
+	void Delete();
+	void BackSpace();
+	std::string GetWordUnderCursor() const;
+	std::string GetWordAt(const Coordinates& aCoords) const;
 
 	float mLineSpacing;
 	Lines mLines;
@@ -279,6 +281,7 @@ private:
 	
 	int mTabSize;
 	bool mOverwrite;
+	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
 	bool mWordSelectionMode;

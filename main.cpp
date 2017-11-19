@@ -237,6 +237,12 @@ int main(int, char**)
 		
 		ImGui::SameLine();
 
+		bool ro = editor.IsReadOnly();
+		if (ImGui::Checkbox("Read-only", &ro))
+			editor.SetReadOnly(ro);
+
+		ImGui::SameLine();
+
 		ImGui::Text("%6d/%-6d %6d lines  %s %s | %s | %s", cpos.mLine + 1, cpos.mColumn + 1, editor.GetTotalLines(),
 			editor.IsOverwrite() ? "Ovr" : "Ins",
 			editor.CanUndo() ? "*" : " ",
