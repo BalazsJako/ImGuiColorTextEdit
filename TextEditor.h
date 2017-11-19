@@ -173,7 +173,6 @@ public:
 
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
-	void DeleteSelection();
 
 	void MoveUp(int aAmount = 1, bool aSelect = false);
 	void MoveDown(int aAmount = 1, bool aSelect = false);
@@ -193,6 +192,7 @@ public:
 	void Copy();
 	void Cut();
 	void Paste();
+	void Delete();
 
 	bool CanUndo() const;
 	bool CanRedo() const;
@@ -268,8 +268,8 @@ private:
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
 	void EnterCharacter(Char aChar);
-	void Delete();
 	void BackSpace();
+	void DeleteSelection();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
 
