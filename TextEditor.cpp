@@ -375,12 +375,12 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mWithinRender = true;
 
 	ImGuiIO& io = ImGui::GetIO();
-	auto xadv = (io.Fonts->Fonts[0]->IndexXAdvance['X']);
+	auto xadv = (io.Fonts->Fonts[0]->IndexAdvanceX['X']);
 	mCharAdvance = ImVec2(xadv, io.Fonts->Fonts[0]->FontSize + mLineSpacing);
 
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::GetStyle().Colors[ImGuiCol_FrameBg]);
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar);
+	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_NoMove);
 
 	ImGui::PushAllowKeyboardFocus(true);
 
@@ -444,14 +444,14 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 		for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
 		{
-			auto c = (char) io.InputCharacters[i];
+			auto c = (unsigned char) io.InputCharacters[i];
 			if (c != 0)
 			{
 				if (isprint(c) || isspace(c))
 				{
 					if (c == '\r')
 						c = '\n';
-					EnterCharacter(c);
+					EnterCharacter((char)c);
 				}
 			}
 		}
