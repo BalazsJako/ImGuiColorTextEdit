@@ -509,10 +509,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			ImVec2 textScreenPos = ImVec2(lineStartScreenPos.x + mCharAdvance.x * cTextStart, lineStartScreenPos.y);
 
 			auto& line = mLines[lineNo];
-			longest = std::max(cTextStart + TextDistanceToLineStart(Coordinates(lineNo, line.size())), longest);
+			longest = std::max(cTextStart + TextDistanceToLineStart(Coordinates(lineNo, (int) line.size())), longest);
 			auto columnNo = 0;
 			Coordinates lineStartCoord(lineNo, 0);
-			Coordinates lineEndCoord(lineNo, line.size());
+			Coordinates lineEndCoord(lineNo, (int)line.size());
 
 			int sstart = -1;
 			int ssend = -1;
@@ -885,7 +885,7 @@ void TextEditor::MoveLeft(int aAmount, bool aSelect, bool aWordMode)
 			if (mState.mCursorPosition.mLine > 0)
 			{
 				--mState.mCursorPosition.mLine;
-				mState.mCursorPosition.mColumn = mLines[mState.mCursorPosition.mLine].size();
+				mState.mCursorPosition.mColumn = (int)mLines[mState.mCursorPosition.mLine].size();
 			}
 		}
 		else
@@ -979,7 +979,7 @@ void TextEditor::MoveTop(bool aSelect)
 void TextEditor::TextEditor::MoveBottom(bool aSelect)
 {
 	auto oldPos = GetCursorPosition();
-	auto newPos = Coordinates(mLines.size() - 1, 0);
+	auto newPos = Coordinates((int)mLines.size() - 1, 0);
 	SetCursorPosition(newPos);
 	if (aSelect)
 	{
@@ -1019,7 +1019,7 @@ void TextEditor::MoveHome(bool aSelect)
 void TextEditor::MoveEnd(bool aSelect)
 {
 	auto oldPos = mState.mCursorPosition;
-	SetCursorPosition(Coordinates(mState.mCursorPosition.mLine, mLines[oldPos.mLine].size()));
+	SetCursorPosition(Coordinates(mState.mCursorPosition.mLine, (int)mLines[oldPos.mLine].size()));
 
 	if (mState.mCursorPosition != oldPos)
 	{
@@ -1113,7 +1113,7 @@ void TextEditor::BackSpace()
 
 			auto& line = mLines[mState.mCursorPosition.mLine];
 			auto& prevLine = mLines[mState.mCursorPosition.mLine - 1];
-			auto prevSize = prevLine.size();
+			auto prevSize = (int)prevLine.size();
 			prevLine.insert(prevLine.end(), line.begin(), line.end());
 			RemoveLine(mState.mCursorPosition.mLine);
 			--mState.mCursorPosition.mLine;
@@ -1293,7 +1293,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 
 std::string TextEditor::GetText() const
 {
-	return GetText(Coordinates(), Coordinates(mLines.size(), 0));
+	return GetText(Coordinates(), Coordinates((int)mLines.size(), 0));
 }
 
 std::string TextEditor::GetSelectedText() const
@@ -1307,7 +1307,7 @@ void TextEditor::ProcessInputs()
 
 void TextEditor::Colorize(int aFromLine, int aLines)
 {
-	int toLine = aLines == -1 ? mLines.size() : std::min((int)mLines.size(), aFromLine + aLines);
+	int toLine = aLines == -1 ? (int)mLines.size() : std::min((int)mLines.size(), aFromLine + aLines);
 	mColorRangeMin = std::min(mColorRangeMin, aFromLine);
 	mColorRangeMax = std::max(mColorRangeMax, toLine);
 	mColorRangeMin = std::max(0, mColorRangeMin);
@@ -1372,7 +1372,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 					{
 						preproc = true;
 					}
-					for (int j = start; j < end; ++j)
+					for (int j = (int)start; j < (int)end; ++j)
 						line[j].mColorIndex = color;
 					first += end - start - 1;
 					break;
