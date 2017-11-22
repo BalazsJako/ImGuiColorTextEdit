@@ -18,6 +18,7 @@ Main features are:
  - identifier declarations: a small piece of text associated with an identifier. The editor displays it in a tooltip when the mouse cursor is hovered over the identifier
  - error markers: the user can specify a list of error messages together the line of occurence, the editor will highligh the lines with red backround and display error message in a tooltip when the mouse cursor is hovered over the line
  - supports large files: there is no explicit limit set on file size or number of lines, performance is not affected when large files are loaded (except syntax coloring, see below)
+ - color palette support: you can switch between different color palettes, or even define your own
 
 Known issues:
  - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
