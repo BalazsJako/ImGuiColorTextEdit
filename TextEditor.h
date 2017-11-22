@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <memory>
 #include <unordered_set>
 #include <unordered_map>
@@ -12,9 +13,9 @@
 class TextEditor
 {
 public:
-	enum class TokenType : uint8_t
+	enum class PaletteIndex : uint8_t
 	{
-		None,
+		Default,
 		Keyword,
 		Number,
 		String,
@@ -26,6 +27,15 @@ public:
 		PreprocIdentifier,
 		Comment,
 		MultiLineComment,
+		Background,
+		Cursor,
+		Selection,
+		ErrorMarker,
+		Breakpoint,
+		LineNumber,
+		CurrentLineFill,
+		CurrentLineFillInactive,
+		CurrentLineEdge,
 		Max
 	};
 
@@ -106,16 +116,16 @@ public:
 	typedef std::unordered_set<std::string> Keywords;
 	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::unordered_set<int> Breakpoints;
-	typedef ImU32 Palette[(unsigned)TokenType::Max];
+	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
 	
 	struct Glyph
 	{
 		Char mChar;
-		TokenType mColorIndex : 7;
+		PaletteIndex mColorIndex : 7;
 		bool mMultiLineComment : 1;
 
-		Glyph(Char aChar, TokenType aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
+		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
 	};
 
 	typedef std::vector<Glyph> Line;
@@ -123,7 +133,7 @@ public:
 
 	struct LanguageDefinition
 	{
-		typedef std::pair<std::string, TokenType> TokenRegexString;
+		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
 
 		std::string mName;
@@ -199,8 +209,11 @@ public:
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
 
+	static const Palette& GetDarkPalette();
+	static const Palette& GetLightPalette();
+
 private:
-	typedef std::vector<std::pair<std::regex, TokenType>> RegexList;
+	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
 	struct EditorState
 	{
@@ -245,7 +258,6 @@ private:
 	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
-	void RenderInternal();
 	void Colorize(int aFromLine = 0, int aCount = -1);
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
 	void ColorizeInternal();
