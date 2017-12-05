@@ -23,7 +23,7 @@ Main features are:
 Known issues:
  - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
  - 8 bit character only, no Unicode or Utf support (yet)
- - color palette is hardwired into the code atm....
- - there's no find/replace 
+ - no variable-width font support
+ - there's no find/replace support
 
 Don't forget to post your screenshots if you use this little piece of software in order to keep me motivated. :)
