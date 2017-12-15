@@ -721,7 +721,7 @@ void TextEditor::EnterCharacter(Char aChar)
 	else
 	{
 		auto& line = mLines[coord.mLine];
-		if (mOverwrite && (int)line.size() < coord.mColumn)
+		if (mOverwrite && (int)line.size() > coord.mColumn)
 			line[coord.mColumn] = Glyph(aChar, PaletteIndex::Default);
 		else
 			line.insert(line.begin() + coord.mColumn, Glyph(aChar, PaletteIndex::Default));
