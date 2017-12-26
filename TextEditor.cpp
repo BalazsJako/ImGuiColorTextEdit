@@ -2,6 +2,7 @@
 #include <chrono>
 #include <string>
 #include <regex>
+#include <cmath>
 
 #include "TextEditor.h"
 
