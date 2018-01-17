@@ -394,6 +394,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
 		//ImGui::CaptureKeyboardFromApp(true);
 
+		io.WantCaptureKeyboard = true;
+		io.WantTextInput = true;
+
 		if (!IsReadOnly() && ImGui::IsKeyPressed('Z'))
 			if (ctrl && !shift && !alt)
 				Undo();
@@ -481,6 +484,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			}
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
+				io.WantCaptureMouse = true;
 				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
 				SetSelection(mInteractiveStart, mInteractiveEnd, mWordSelectionMode);
 			}
@@ -1166,7 +1170,7 @@ void TextEditor::SelectWordUnderCursor()
 
 void TextEditor::SelectAll()
 {
-	SetSelection(Coordinates(0, 0), Coordinates(mLines.size(), 0));
+	SetSelection(Coordinates(0, 0), Coordinates((int)mLines.size(), 0));
 }
 
 bool TextEditor::HasSelection() const
