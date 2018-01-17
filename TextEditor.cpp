@@ -537,18 +537,19 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			}
 
 			static char buf[16];
+			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 
 			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
 			{
-				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, mPalette[(int)PaletteIndex::Breakpoint]);
+				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Breakpoint]);
 			}
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
 			if (errorIt != mErrorMarkers.end())
 			{
-				auto end = ImVec2(lineStartScreenPos.x + contentSize.x, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(lineStartScreenPos, end, mPalette[(int)PaletteIndex::ErrorMarker]);
+				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
+				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::ErrorMarker]);
 
 				if (ImGui::IsMouseHoveringRect(lineStartScreenPos, end))
 				{
@@ -573,7 +574,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				if (!HasSelection())
 				{
-					auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 					auto end = ImVec2(start.x + contentSize.x + scrollX, start.y + mCharAdvance.y);
 					drawList->AddRectFilled(start, end, mPalette[(int)(focused ? PaletteIndex::CurrentLineFill : PaletteIndex::CurrentLineFillInactive)]);
 					drawList->AddRect(start, end, mPalette[(int)PaletteIndex::CurrentLineEdge], 1.0f);
