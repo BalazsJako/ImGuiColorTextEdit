@@ -97,8 +97,19 @@ TextEditor::Coordinates TextEditor::GetActualCursorCoordinates() const
 
 TextEditor::Coordinates TextEditor::SanitizeCoordinates(const Coordinates & aValue) const
 {
-	auto line = std::max(0, std::min((int)mLines.size() - 1, aValue.mLine));
-	auto column = mLines.empty() ? 0 : std::min((int)mLines[line].size(), aValue.mColumn);
+	auto line = aValue.mLine;
+	auto column = aValue.mColumn;
+
+	if (line >= mLines.size())
+	{
+		line = mLines.size() - 1;
+		column = mLines.empty() ? 0 : mLines[line].size();
+	}
+	else
+	{
+		column = mLines.empty() ? 0 : std::min((int)mLines[line].size(), aValue.mColumn);
+	}
+
 	return Coordinates(line, column);
 }
 
