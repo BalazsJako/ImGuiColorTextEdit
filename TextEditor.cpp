@@ -102,8 +102,8 @@ TextEditor::Coordinates TextEditor::SanitizeCoordinates(const Coordinates & aVal
 
 	if (line >= mLines.size())
 	{
-		line = mLines.size() - 1;
-		column = mLines.empty() ? 0 : mLines[line].size();
+		line = (int)mLines.size() - 1;
+		column = mLines.empty() ? 0 : (int)mLines[line].size();
 	}
 	else
 	{
@@ -1304,7 +1304,7 @@ void TextEditor::Redo(int aSteps)
 
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
-	static Palette p = { 
+	static Palette p = { {
 		0xffffffff,	// None
 		0xffd69c56,	// Keyword	
 		0xff00ff00,	// Number
@@ -1326,13 +1326,13 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 		0x40000000, // Current line fill
 		0x40808080, // Current line fill (inactive)
 		0x40a0a0a0, // Current line edge
-	};
+	} };
 	return p;
 }
 
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
-	static Palette p = {
+	static Palette p = { {
 		0xff000000,	// None
 		0xffff0c06,	// Keyword	
 		0xff008000,	// Number
@@ -1354,13 +1354,13 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 		0x40000000, // Current line fill
 		0x40808080, // Current line fill (inactive)
 		0x40000000, // Current line edge
-	};
+	} };
 	return p;
 }
 
 const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 {
-	static Palette p = {
+	static Palette p = { {
 		0xff00ffff,	// None
 		0xffffff00,	// Keyword	
 		0xff00ff00,	// Number
@@ -1382,7 +1382,7 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 		0x40000000, // Current line fill
 		0x40808080, // Current line fill (inactive)
 		0x40000000, // Current line edge
-	};
+	} };
 	return p;
 }
 
