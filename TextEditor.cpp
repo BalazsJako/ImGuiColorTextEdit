@@ -23,6 +23,7 @@ TextEditor::TextEditor()
 	, mWithinRender(false)
 	, mScrollToCursor(false)
 	, mWordSelectionMode(false)
+	, mTextChanged(false)
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
 	, mCheckMultilineComments(true)
@@ -147,6 +148,8 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 		if (aStart.mLine < aEnd.mLine)
 			RemoveLine(aStart.mLine + 1, aEnd.mLine + 1);
 	}
+
+	mTextChanged = true;
 }
 
 int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValue)
@@ -188,6 +191,8 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			++aWhere.mColumn;
 		}
 		chr = *(++aValue);
+
+		mTextChanged = true;
 	}
 
 	return totalLines;
@@ -305,6 +310,8 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
+
+	mTextChanged = true;
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -331,6 +338,8 @@ void TextEditor::RemoveLine(int aIndex)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aIndex);
+
+	mTextChanged = true;
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -374,6 +383,7 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
+	mTextChanged = false;
 
 	ImGuiIO& io = ImGui::GetIO();
 	auto xadv = (io.Fonts->Fonts[0]->IndexAdvanceX['X']);
@@ -687,6 +697,8 @@ void TextEditor::SetText(const std::string & aText)
 		{
 			mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
 		}
+
+		mTextChanged = true;
 	}
 
 	mUndoBuffer.clear();
@@ -735,6 +747,8 @@ void TextEditor::EnterCharacter(Char aChar)
 		mState.mCursorPosition = coord;
 		++mState.mCursorPosition.mColumn;
 	}
+
+	mTextChanged = true;
 
 	u.mAdded = aChar;
 	u.mAddedEnd = GetActualCursorCoordinates();
@@ -1095,6 +1109,8 @@ void TextEditor::Delete()
 			line.erase(line.begin() + pos.mColumn);
 		}
 
+		mTextChanged = true;
+
 		Colorize(pos.mLine, 1);
 	}
 
@@ -1155,6 +1171,9 @@ void TextEditor::BackSpace()
 			if (mState.mCursorPosition.mColumn < (int)line.size())
 				line.erase(line.begin() + mState.mCursorPosition.mColumn);
 		}
+
+		mTextChanged = true;
+
 		EnsureCursorVisible();
 		Colorize(mState.mCursorPosition.mLine, 1);
 	}
