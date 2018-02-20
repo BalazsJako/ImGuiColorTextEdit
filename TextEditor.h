@@ -13,7 +13,7 @@
 class TextEditor
 {
 public:
-	enum class PaletteIndex : uint8_t
+	enum class PaletteIndex
 	{
 		Default,
 		Keyword,
@@ -300,6 +300,7 @@ private:
 	bool mWithinRender;
 	bool mScrollToCursor;
 	bool mWordSelectionMode;
+	bool mTextChanged;
 	int mColorRangeMin, mColorRangeMax;
 
 	Palette mPalette;
