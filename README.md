@@ -7,7 +7,7 @@ Demo project: https://github.com/BalazsJako/ColorTextEditorDemo
 
 This is my attempt to write a relatively simple widget which provides source code editing functionality with basic syntax highlighting.
 
-While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex internal state, it did not seem to be practical to try and enforce that.
+While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex internal state, it did not seem to be practical to try and enforce fully immediate mode.
 
 The code is work in progress, please report if you find any issues.
 
