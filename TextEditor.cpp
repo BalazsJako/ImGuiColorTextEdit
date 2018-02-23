@@ -100,7 +100,7 @@ TextEditor::Coordinates TextEditor::SanitizeCoordinates(const Coordinates & aVal
 	auto line = aValue.mLine;
 	auto column = aValue.mColumn;
 
-	if (line >= mLines.size())
+	if (line >= (int)mLines.size())
 	{
 		line = (int)mLines.size() - 1;
 		column = mLines.empty() ? 0 : (int)mLines[line].size();
@@ -591,7 +591,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 			}
 
-			snprintf(buf, 16, "%6d", lineNo + 1);
+			auto chars = snprintf(buf, 16, "%6d", lineNo + 1);
+			assert(chars >= 0 && chars < 16);
 			drawList->AddText(ImVec2(lineStartScreenPos.x /*+ mCharAdvance.x * 1*/, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
 			if (mState.mCursorPosition.mLine == lineNo)
@@ -961,8 +962,11 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 		auto& line = mLines[mState.mCursorPosition.mLine];
 		if (mState.mCursorPosition.mColumn >= (int)line.size())
 		{
-			mState.mCursorPosition.mLine = std::max(0, std::min((int)mLines.size() - 1, mState.mCursorPosition.mLine + 1));
-			mState.mCursorPosition.mColumn = 0;
+			if (mState.mCursorPosition.mLine < (int)mLines.size() - 1)
+			{
+				mState.mCursorPosition.mLine = std::max(0, std::min((int)mLines.size() - 1, mState.mCursorPosition.mLine + 1));
+				mState.mCursorPosition.mColumn = 0;
+			}
 		}
 		else
 		{
@@ -1539,7 +1543,7 @@ void TextEditor::ColorizeInternal()
 						inComment = commentStart <= i;
 
 						line[i.mColumn].mMultiLineComment = inComment;
-
+						
 						auto& endStr = mLanguageDefinition.mCommentEnd;
 						if (i.mColumn + 1 >= (int)endStr.size() &&
 							std::equal(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
