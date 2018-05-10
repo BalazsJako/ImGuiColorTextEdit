@@ -39,6 +39,13 @@ public:
 		Max
 	};
 
+	enum class SelectionMode
+	{
+		Normal,
+		Word,
+		Line
+	};
+
 	struct Breakpoint
 	{
 		int mLine;
@@ -196,7 +203,7 @@ public:
 
 	void SetSelectionStart(const Coordinates& aPosition);
 	void SetSelectionEnd(const Coordinates& aPosition);
-	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, bool awordmode = false);
+	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
 	void SelectWordUnderCursor();
 	void SelectAll();
 	bool HasSelection() const;
@@ -299,9 +306,9 @@ private:
 	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
-	bool mWordSelectionMode;
 	bool mTextChanged;
 	int mColorRangeMin, mColorRangeMax;
+	SelectionMode mSelectionMode;
 
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
