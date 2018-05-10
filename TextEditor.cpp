@@ -15,15 +15,15 @@ static const int cTextStart = 7;
 // - testing
 
 template<class InputIt1, class InputIt2, class BinaryPredicate>
-bool equal(InputIt1 first1, InputIt1 last1,
-	InputIt2 first2, BinaryPredicate p)
+bool equals(InputIt1 first1, InputIt1 last1,
+	InputIt2 first2, InputIt2 last2, BinaryPredicate p)
 {
-	for (; first1 != last1; ++first1, ++first2) {
-		if (!p(*first1, *first2)) {
+	for (; first1 != last1 && first2 != last2; ++first1, ++first2) 
+	{
+		if (!p(*first1, *first2))
 			return false;
-		}
 	}
-	return true;
+	return first1 == last1 && first2 == last2;
 }
 
 TextEditor::TextEditor()
@@ -869,7 +869,7 @@ void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aE
 		const auto lineNo = mState.mSelectionEnd.mLine;
 		const auto lineSize = lineNo < mLines.size() ? mLines[lineNo].size() : 0;
 		mState.mSelectionStart = Coordinates(mState.mSelectionStart.mLine, 0);
-		mState.mSelectionEnd = Coordinates(lineNo, lineSize);
+		mState.mSelectionEnd = Coordinates(lineNo, (int) lineSize);
 		break;
 	}
 	default:
@@ -1599,7 +1599,7 @@ void TextEditor::ColorizeInternal()
 						auto from = line.begin() + i.mColumn;
 						auto& startStr = mLanguageDefinition.mCommentStart;
 						if (i.mColumn + startStr.size() <= line.size() &&
-							std::equal(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
+							equals(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
 							commentStart = i;
 
 						inComment = commentStart <= i;
@@ -1608,7 +1608,7 @@ void TextEditor::ColorizeInternal()
 						
 						auto& endStr = mLanguageDefinition.mCommentEnd;
 						if (i.mColumn + 1 >= (int)endStr.size() &&
-							std::equal(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
+							equals(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
 							commentStart = end;
 					}
 				}
