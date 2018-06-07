@@ -698,9 +698,16 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 			}
 
-			auto chars = snprintf(buf, 16, "%6d", lineNo + 1);
-			assert(chars >= 0 && chars < 16);
-			drawList->AddText(ImVec2(lineStartScreenPos.x /*+ mCharAdvance.x * 1*/, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
+			/*
+				Draw line number (right aligned)
+			*/
+			std::string lineAsString(std::to_string(lineNo));
+			auto lineAsStringWidth = ImGui::CalcTextSize(lineAsString.c_str()).x;
+			drawList->AddText(ImVec2(mTextStart - lineAsStringWidth, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], lineAsString.c_str());
+
+			/*
+				Highlight the current line (where the cursor is).
+			*/
 
 			if (mState.mCursorPosition.mLine == lineNo)
 			{
