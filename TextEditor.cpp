@@ -1494,6 +1494,12 @@ std::string TextEditor::GetSelectedText() const
 	return GetText(mState.mSelectionStart, mState.mSelectionEnd);
 }
 
+std::string TextEditor::GetCurrentLineText()const
+{
+	auto lineLength     = mLines[mState.mCursorPosition.mLine].size();
+	return GetText(Coordinates(mState.mCursorPosition.mLine, 0), Coordinates(mState.mCursorPosition.mLine, lineLength));
+}
+
 void TextEditor::ProcessInputs()
 {
 }

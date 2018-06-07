@@ -178,7 +178,8 @@ public:
 	void SetText(const std::string& aText);
 	std::string GetText() const;
 	std::string GetSelectedText() const;
-
+	std::string GetCurrentLineText()const;
+	
 	int GetTotalLines() const { return (int)mLines.size(); }
 	bool IsOverwrite() const { return mOverwrite; }
 
