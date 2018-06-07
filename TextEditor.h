@@ -129,7 +129,7 @@ public:
 	struct Glyph
 	{
 		Char mChar;
-		PaletteIndex mColorIndex : 7;
+		PaletteIndex mColorIndex = PaletteIndex::Default;
 		bool mMultiLineComment : 1;
 
 		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
