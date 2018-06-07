@@ -500,6 +500,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Cut();
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
+		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) )
+			EnterCharacter('\n');
+
 		/*
 			Add Input Characters
 		*/
