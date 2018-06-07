@@ -6,7 +6,6 @@
 
 #include "TextEditor.h"
 
-static const int cTextStart = 7;
 
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML
