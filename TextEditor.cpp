@@ -432,6 +432,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	const float fontSize = ImGui::GetCurrentWindow()->CalcFontSize();
 	mCharAdvance = ImVec2(fontSize , ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);	
 
+	/*
+		Keyboard inputs
+	*/
 
 	ImGui::PushAllowKeyboardFocus(true);
 	ImGuiIO& io = ImGui::GetIO();
@@ -497,6 +500,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Cut();
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
+		/*
+			Add Input Characters
+		*/
 
 		if (!IsReadOnly())
 		{
@@ -516,15 +522,24 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		}
 	}
 
+	/*
+		Mouse inputs
+	*/
+
 	if (ImGui::IsWindowHovered())
 	{
 		static float lastClick = -1.0f;
 		if (!shift && !alt)
 		{
-			auto click = ImGui::IsMouseClicked(0);
+			auto click       = ImGui::IsMouseClicked(0);
 			auto doubleClick = ImGui::IsMouseDoubleClicked(0);
-			auto t = ImGui::GetTime();
+			auto t           = ImGui::GetTime();
 			auto tripleClick = click && !doubleClick && t - lastClick < io.MouseDoubleClickTime;
+
+			/*
+				Left mouse button triple click
+			*/
+
 			if (tripleClick)
 			{
 				printf("triple\n");
@@ -537,6 +552,11 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				lastClick = -1.0f;
 			}
+
+			/*
+				Left mouse button double click
+			*/
+
 			else if (doubleClick)
 			{
 				printf("double\n");
@@ -552,6 +572,11 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				lastClick = ImGui::GetTime();
 			}
+
+			/*
+				Left mouse button click
+			*/
+
 			else if (click)
 			{
 				printf("single\n");
@@ -564,19 +589,18 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				lastClick = ImGui::GetTime();
 			}
+
+			/*
+				Mouse left button dragging (=> update selection)
+			*/
+
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
 				io.WantCaptureMouse = true;
 				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
 				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 			}
-			else
-			{
-			}
 		}
-
-		//if (!ImGui::IsMouseDown(0))
-		//	mWordSelectionMode = false;
 	}
 
 	ColorizeInternal();
@@ -611,6 +635,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Coordinates lineStartCoord(lineNo, 0);
 			Coordinates lineEndCoord(lineNo, (int)line.size());
 
+			/*
+				Draw Selected area 
+			*/
+
 			int sstart = -1;
 			int ssend = -1;
 
@@ -630,6 +658,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				drawList->AddRectFilled(vstart, vend, mPalette[(int)PaletteIndex::Selection]);
 			}
 
+			/*
+				Draw break point
+			*/
+
 			static char buf[16];
 			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 
@@ -638,6 +670,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
 				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Breakpoint]);
 			}
+
+			/*
+				Draw error marker
+			*/
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
 			if (errorIt != mErrorMarkers.end())
@@ -692,6 +728,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					}
 				}
 			}
+
+			/*
+				Draw Text
+			*/
 
 			appendIndex = 0;
 			auto prevColor = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
