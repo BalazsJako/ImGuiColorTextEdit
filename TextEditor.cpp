@@ -411,6 +411,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ImGuiIO& io = ImGui::GetIO();
 	auto xadv = (io.Fonts->Fonts[0]->IndexAdvanceX['X']);
 	mCharAdvance = ImVec2(io.FontGlobalScale * xadv, io.FontGlobalScale * io.Fonts->Fonts[0]->FontSize + mLineSpacing);
+	mCursorPositionChanged = false;
 
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
@@ -793,7 +794,7 @@ void TextEditor::EnterCharacter(Char aChar)
 		auto& newLine = mLines[coord.mLine + 1];
 		newLine.insert(newLine.begin(), line.begin() + coord.mColumn, line.end());
 		line.erase(line.begin() + coord.mColumn, line.begin() + line.size());
-		mState.mCursorPosition = Coordinates(coord.mLine + 1, 0);
+		SetCursorPosition(Coordinates(coord.mLine + 1, 0));
 	}
 	else
 	{
@@ -802,8 +803,7 @@ void TextEditor::EnterCharacter(Char aChar)
 			line[coord.mColumn] = Glyph(aChar, PaletteIndex::Default);
 		else
 			line.insert(line.begin() + coord.mColumn, Glyph(aChar, PaletteIndex::Default));
-		mState.mCursorPosition = coord;
-		++mState.mCursorPosition.mColumn;
+		SetCursorPosition(Coordinates(coord.mLine, coord.mColumn + 1));
 	}
 
 	mTextChanged = true;
@@ -828,6 +828,7 @@ void TextEditor::SetCursorPosition(const Coordinates & aPosition)
 	if (mState.mCursorPosition != aPosition)
 	{
 		mState.mCursorPosition = aPosition;
+		mCursorPositionChanged = true;
 		EnsureCursorVisible();
 	}
 }
@@ -848,6 +849,9 @@ void TextEditor::SetSelectionEnd(const Coordinates & aPosition)
 
 void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aEnd, SelectionMode aMode)
 {
+	auto oldSelStart = mState.mSelectionStart;
+	auto oldSelEnd   = mState.mSelectionEnd;
+
 	mState.mSelectionStart = SanitizeCoordinates(aStart);
 	mState.mSelectionEnd = SanitizeCoordinates(aEnd);
 	if (aStart > aEnd)
@@ -875,6 +879,10 @@ void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aE
 	default:
 		break;
 	}
+
+	if (mState.mSelectionStart != oldSelStart ||
+		mState.mSelectionEnd != oldSelEnd)
+		mCursorPositionChanged = true;
 }
 
 void TextEditor::InsertText(const std::string & aValue)

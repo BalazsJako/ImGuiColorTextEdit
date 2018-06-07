@@ -185,6 +185,7 @@ public:
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
+	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
 
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
@@ -307,6 +308,7 @@ private:
 	bool mWithinRender;
 	bool mScrollToCursor;
 	bool mTextChanged;
+	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
 
