@@ -612,7 +612,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
 	int appendIndex = 0;
-	int longest = mTextStart;
+	float longest(mTextStart);
 
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
 	auto scrollX = ImGui::GetScrollX();
@@ -627,6 +627,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	if (!mLines.empty())
 	{
+		float mSpaceSize = ImGui::CalcTextSize(" ").x;
+
 		while (lineNo <= lineMax)
 		{
 			ImVec2 lineStartScreenPos = ImVec2(cursorScreenPos.x, cursorScreenPos.y + lineNo * mCharAdvance.y);
@@ -720,7 +722,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					drawList->AddRect(start, end, mPalette[(int)PaletteIndex::CurrentLineEdge], 1.0f);
 				}
 
-				int cx = TextDistanceToLineStart(mState.mCursorPosition);
+				float cx = TextDistanceToLineStart(mState.mCursorPosition);
 
 				if (focused)
 				{
@@ -730,8 +732,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 					if (elapsed > 400)
 					{
-						ImVec2 cstart(lineStartScreenPos.x + mTextStart + cx, lineStartScreenPos.y);
-						ImVec2 cend(lineStartScreenPos.x + mTextStart + cx + (mOverwrite ? mCharAdvance.x : 1.0f), lineStartScreenPos.y + mCharAdvance.y);
+						ImVec2 cstart(textScreenPos.x + cx, lineStartScreenPos.y);
+						ImVec2 cend(textScreenPos.x + cx + (mOverwrite ? mCharAdvance.x : 1.0f), lineStartScreenPos.y + mCharAdvance.y);
 						drawList->AddRectFilled(cstart, cend, mPalette[(int)PaletteIndex::Cursor]);
 						if (elapsed > 800)
 							timeStart = timeEnd;
@@ -744,33 +746,35 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			*/
 
 			appendIndex = 0;
-			auto prevColor = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
+			auto prevColor           = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
+			ImVec2 bufferOffset;	
 
 			for (auto& glyph : line)
 			{
 				auto color = glyph.mMultiLineComment ? PaletteIndex::MultiLineComment : glyph.mColorIndex;
 
-				if (color != prevColor && !buffer.empty())
-				{
-					drawList->AddText(textScreenPos, mPalette[(uint8_t)prevColor], buffer.c_str());
+				if ((color != prevColor || glyph.mChar == '\t') && !buffer.empty())
+				{					
+					drawList->AddText(textScreenPos + bufferOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
 					auto textSize = ImGui::CalcTextSize(buffer.c_str());
-					textScreenPos.x += textSize.x;
+					bufferOffset.x += textSize.x;
 					buffer.clear();
 					prevColor = color;
 				}
+
+				if (glyph.mChar == '\t')
+					bufferOffset.x = std::floor(bufferOffset.x / (float(mTabSize) * mSpaceSize)) *  (float(mTabSize) * mSpaceSize);				
+
 				appendIndex = AppendBuffer(buffer, glyph.mChar, appendIndex);
 				++columnNo;
 			}
 
 			if (!buffer.empty())
 			{
-				drawList->AddText(textScreenPos, mPalette[(uint8_t)prevColor], buffer.c_str());
+				drawList->AddText(textScreenPos + bufferOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
 				buffer.clear();
 			}
-			appendIndex = 0;
-			lineStartScreenPos.y += mCharAdvance.y;
-			textScreenPos.x = lineStartScreenPos.x + mTextStart;
-			textScreenPos.y = lineStartScreenPos.y;
+
 			++lineNo;
 		}
 
@@ -1719,23 +1723,26 @@ void TextEditor::ColorizeInternal()
 	}
 }
 
-int TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
+float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 {
-	auto& line = mLines[aFrom.mLine];
-	std::string textBeforeCoords;
+	auto& line          = mLines[aFrom.mLine];
+	float distance      = 0.0f;
+	float spaceDistance = ImGui::CalcTextSize(" ").x;
 
 	for (size_t it = 0u; it < line.size() && it < (unsigned)aFrom.mColumn; ++it)
 	{
 		if (line[it].mChar == '\t')
 		{
-			for(int i = 1; i <= mTabSize; i++)
-				textBeforeCoords += ' ';
+			distance = (std::floor(distance / (spaceDistance * float(mTabSize))) + 1.0f ) * (spaceDistance * float(mTabSize)) ;
+		}else{
+			char tempCString[2];
+ 			tempCString[0] = line[it].mChar;
+			tempCString[1] = '\0';
+			distance += ImGui::CalcTextSize(tempCString).x;
 		}
-		else
-			textBeforeCoords += line[it].mChar;
 	}
 
-	return ImGui::CalcTextSize(textBeforeCoords.c_str()).x;
+	return distance;
 }
 
 void TextEditor::EnsureCursorVisible()
@@ -1766,7 +1773,7 @@ void TextEditor::EnsureCursorVisible()
 	if (pos.mLine > bottom - 4)
 		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + 4) * mCharAdvance.y - height));
 	if (len + mTextStart < left + 4)
-		ImGui::SetScrollX(std::max(0, len + mTextStart - 4));
+		ImGui::SetScrollX(std::max(0.0f, len + mTextStart - 4));
 	if (len + mTextStart > right - 4)
 		ImGui::SetScrollX(std::max(0.0f, len + mTextStart + 4 - width));
 }

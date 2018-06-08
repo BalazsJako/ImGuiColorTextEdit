@@ -273,7 +273,7 @@ private:
 	void Colorize(int aFromLine = 0, int aCount = -1);
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
 	void ColorizeInternal();
-	int TextDistanceToLineStart(const Coordinates& aFrom) const;
+	float TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
 	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
