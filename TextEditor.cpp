@@ -30,6 +30,7 @@ bool equals(InputIt1 first1, InputIt1 last1,
 TextEditor::TextEditor()
 	: mLineSpacing(0.0f)
 	, mUndoIndex(0)
+	, mUndoSaveIndex(0)
 	, mTabSize(4)
 	, mOverwrite(false)
 	, mReadOnly(false)
@@ -232,6 +233,12 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 void TextEditor::AddUndo(UndoRecord& aValue)
 {
 	assert(!mReadOnly);
+
+	//  Is save index lost?
+	if(mUndoSaveIndex > mUndoIndex)
+	{
+		mUndoSaveIndex = -1;
+	}
 
 	mUndoBuffer.resize(mUndoIndex + 1);
 	mUndoBuffer.back() = aValue;
@@ -874,6 +881,8 @@ void TextEditor::SetText(const std::string & aText)
 		mTextChanged = true;
 	}
 
+	mUndoIndex = 0;
+	mUndoSaveIndex = 0;
 	mUndoBuffer.clear();
 
 	Colorize();
@@ -1481,6 +1490,16 @@ void TextEditor::Redo(int aSteps)
 {
 	while (CanRedo() && aSteps-- > 0)
 		mUndoBuffer[mUndoIndex++].Redo(this);
+}
+
+void TextEditor::MarkSaved()
+{
+	mUndoSaveIndex = mUndoIndex;
+}
+
+bool TextEditor::IsDirty() const
+{
+	return mUndoSaveIndex != mUndoIndex;
 }
 
 const TextEditor::Palette & TextEditor::GetDarkPalette()

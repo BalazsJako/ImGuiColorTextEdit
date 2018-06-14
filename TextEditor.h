@@ -217,6 +217,8 @@ public:
 	bool CanRedo() const;
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
+	void MarkSaved();
+	bool IsDirty() const;
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
@@ -303,7 +305,8 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
-	
+	int mUndoSaveIndex;
+
 	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;
