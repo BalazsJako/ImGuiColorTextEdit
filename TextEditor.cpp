@@ -192,16 +192,23 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 		}
 		else if (chr == '\n')
 		{
-			if (aWhere.mColumn < (int)mLines[aWhere.mLine].size())
+			if (aWhere.mLine < mLines.size())
 			{
-				auto& newLine = InsertLine(aWhere.mLine + 1);
-				auto& line = mLines[aWhere.mLine];
-				newLine.insert(newLine.begin(), line.begin() + aWhere.mColumn, line.end());
-				line.erase(line.begin() + aWhere.mColumn, line.end());
+				if (aWhere.mColumn < (int)mLines[aWhere.mLine].size())
+				{
+					auto& newLine = InsertLine(aWhere.mLine + 1);
+					auto& line = mLines[aWhere.mLine];
+					newLine.insert(newLine.begin(), line.begin() + aWhere.mColumn, line.end());
+					line.erase(line.begin() + aWhere.mColumn, line.end());
+				}
+				else
+				{
+					InsertLine(aWhere.mLine + 1);
+				}
 			}
 			else
 			{
-				InsertLine(aWhere.mLine + 1);
+				InsertLine(aWhere.mLine);
 			}
 			++aWhere.mLine;
 			aWhere.mColumn = 0;
