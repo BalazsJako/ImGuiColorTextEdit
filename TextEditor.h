@@ -295,6 +295,9 @@ private:
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
 
+	bool MouseOverText() const;
+	ImVec2 MouseDistanceOutsideTextArea() const;
+
 	float mLineSpacing;
 	Lines mLines;
 	EditorState mState;

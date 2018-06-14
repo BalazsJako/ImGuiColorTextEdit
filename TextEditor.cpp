@@ -5,6 +5,7 @@
 #include <cmath>
 
 #include "TextEditor.h"
+#include "imgui_internal.h"
 
 static const int cTextStart = 7;
 
@@ -410,6 +411,62 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 	return r;
 }
 
+bool TextEditor::MouseOverText() const
+{
+	const auto mousePos = ImGui::GetMousePos();
+	const auto cursorScreenPos = ImGui::GetCursorScreenPos();
+	const auto contentSize = ImGui::GetContentRegionMax();
+	const auto scrollX = ImGui::GetScrollX();
+	const auto scrollY = ImGui::GetScrollY();
+
+	const auto breakAndLineNumberWidth = mCharAdvance.x * cTextStart;
+	const auto areaA = ImVec2(cursorScreenPos.x + breakAndLineNumberWidth, cursorScreenPos.y + scrollY);
+	const auto areaB = ImVec2(cursorScreenPos.x + contentSize.x + scrollX * 2, areaA.y + contentSize.y + scrollY);
+	return ImRect(areaA, areaB).Contains(mousePos);
+}
+
+ImVec2 TextEditor::MouseDistanceOutsideTextArea() const
+{
+	const auto mousePos = ImGui::GetMousePos();
+	const auto cursorScreenPos = ImGui::GetCursorScreenPos();
+	const auto contentSize = ImGui::GetContentRegionMax();
+	const auto scrollX = ImGui::GetScrollX();
+	const auto scrollY = ImGui::GetScrollY();
+
+	const auto breakAndLineNumberWidth = mCharAdvance.x * cTextStart;
+	const auto areaA = ImVec2(cursorScreenPos.x + breakAndLineNumberWidth, cursorScreenPos.y + scrollY);
+	const auto areaB = ImVec2(cursorScreenPos.x + contentSize.x + scrollX * 2, areaA.y + contentSize.y + scrollY);
+
+	const auto textArea = ImRect(areaA, areaB);
+	if(textArea.Contains(mousePos))
+	{
+		return {0,0};
+	}
+	
+	float x = 0;
+	float y = 0;
+
+	if(mousePos.x < textArea.Min.x)
+	{
+		x = mousePos.x - textArea.Min.x;
+	}
+	else if(mousePos.x > textArea.Max.x)
+	{
+		x = mousePos.x - textArea.Max.x;
+	}
+
+	if (mousePos.y < textArea.Min.y)
+	{
+		y = mousePos.y - textArea.Min.y;
+	}
+	else if (mousePos.y > textArea.Max.y)
+	{
+		y = mousePos.y - textArea.Max.y;
+	}
+
+	return { x,y };
+}
+
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
@@ -429,10 +486,16 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto ctrl = io.KeyCtrl;
 	auto alt = io.KeyAlt;
 
+	if (ImGui::IsWindowHovered())
+	{
+		if (MouseOverText())
+		{
+			ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
+		}
+	}
+
 	if (ImGui::IsWindowFocused())
 	{
-		if (ImGui::IsWindowHovered())
-			ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
 		//ImGui::CaptureKeyboardFromApp(true);
 
 		io.WantCaptureKeyboard = true;
@@ -506,67 +569,112 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		}
 	}
 
+	static bool textAreaHeld = false;
 	if (ImGui::IsWindowHovered())
 	{
 		static float lastClick = -1.0f;
+		
 		if (!shift && !alt)
 		{
-			auto click = ImGui::IsMouseClicked(0);
-			auto doubleClick = ImGui::IsMouseDoubleClicked(0);
-			auto t = ImGui::GetTime();
-			auto tripleClick = click && !doubleClick && t - lastClick < io.MouseDoubleClickTime;
-			if (tripleClick)
+			if (MouseOverText())
 			{
-				printf("triple\n");
-				if (!ctrl)
+				auto click = ImGui::IsMouseClicked(0);
+				auto doubleClick = ImGui::IsMouseDoubleClicked(0);
+				auto t = ImGui::GetTime();
+				auto tripleClick = click && !doubleClick && t - lastClick < io.MouseDoubleClickTime;
+				if (tripleClick)
 				{
-					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-					mSelectionMode = SelectionMode::Line;
-					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
-				}
+					printf("triple\n");
+					if (!ctrl)
+					{
+						mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+						mSelectionMode = SelectionMode::Line;
+						SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+					}
 
-				lastClick = -1.0f;
-			}
-			else if (doubleClick)
-			{
-				printf("double\n");
-				if (!ctrl)
+					lastClick = -1.0f;
+				}
+				else if (doubleClick)
 				{
+					printf("double\n");
+					if (!ctrl)
+					{
+						mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+						if (mSelectionMode == SelectionMode::Line)
+							mSelectionMode = SelectionMode::Normal;
+						else
+							mSelectionMode = SelectionMode::Word;
+						SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+					}
+
+					lastClick = ImGui::GetTime();
+				}
+				else if (click)
+				{
+					printf("single\n");
 					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-					if (mSelectionMode == SelectionMode::Line)
-						mSelectionMode = SelectionMode::Normal;
-					else
+					if (ctrl)
 						mSelectionMode = SelectionMode::Word;
+					else
+						mSelectionMode = SelectionMode::Normal;
 					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+
+					lastClick = ImGui::GetTime();
 				}
 
-				lastClick = ImGui::GetTime();
-			}
-			else if (click)
-			{
-				printf("single\n");
-				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-				if (ctrl)
-					mSelectionMode = SelectionMode::Word;
-				else
-					mSelectionMode = SelectionMode::Normal;
-				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
-
-				lastClick = ImGui::GetTime();
-			}
-			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
-			{
-				io.WantCaptureMouse = true;
-				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
-				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
-			}
-			else
-			{
+				textAreaHeld = click || ImGui::IsMouseDown(0);
 			}
 		}
 
 		//if (!ImGui::IsMouseDown(0))
 		//	mWordSelectionMode = false;
+	}
+
+	// Continue to select text while mouse is held
+	if (textAreaHeld)
+	{
+		const float scrollCounterMax = 4.0f;
+		static float scrollVerticalCounter = scrollCounterMax;
+
+		// Not holding the button down anymore?
+		if(!ImGui::IsMouseDown(0))
+		{
+			textAreaHeld = false;
+			//Reset counter
+			scrollVerticalCounter = scrollCounterMax;
+		}
+		else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
+		{
+			if(!MouseOverText())
+			{
+				// TODO Perform horizontal scoll
+
+				auto dist = MouseDistanceOutsideTextArea();
+
+				if(dist.y)
+				{
+					scrollVerticalCounter -= ImGui::GetIO().DeltaTime * abs(dist.y);
+
+					if(scrollVerticalCounter < 0.0f)
+					{
+						EnsureCursorVisible();
+						scrollVerticalCounter = scrollCounterMax;
+					}
+				}
+				else
+				{
+					scrollVerticalCounter = scrollCounterMax;
+				}
+			}
+			else
+			{
+				scrollVerticalCounter = scrollCounterMax;
+			}
+
+			io.WantCaptureMouse = true;
+			mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+			SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+		}
 	}
 
 	ColorizeInternal();
