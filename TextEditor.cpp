@@ -41,6 +41,8 @@ TextEditor::TextEditor()
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
 	, mCheckMultilineComments(true)
+	, mBreakpointsModified(false)
+	, mBreakpointsModifiedCallback(nullptr)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -270,6 +272,13 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 	return Coordinates(lineNo, column);
 }
 
+unsigned int TextEditor::ScreenPosToLineNumber(const ImVec2& aPosition) const
+{
+	const ImVec2 origin = ImGui::GetCursorScreenPos();
+	const unsigned int lineNo = std::max(0, static_cast<int>(floor((aPosition.y - origin.y) / mCharAdvance.y)));
+	return lineNo + 1;
+}
+
 TextEditor::Coordinates TextEditor::FindWordStart(const Coordinates & aFrom) const
 {
 	Coordinates at = aFrom;
@@ -430,6 +439,20 @@ bool TextEditor::MouseOverText() const
 	const auto areaA = ImVec2(cursorScreenPos.x + breakAndLineNumberWidth, cursorScreenPos.y + scrollY);
 	const auto areaB = ImVec2(cursorScreenPos.x + contentSize.x + scrollX * 2, areaA.y + contentSize.y + scrollY);
 	return ImRect(areaA, areaB).Contains(mousePos);
+}
+
+bool TextEditor::MouseOverBreakpoints() const
+{
+	const auto mousePos = ImGui::GetMousePos();
+	const auto cursorScreenPos = ImGui::GetCursorScreenPos();
+	const auto contentSize = ImGui::GetContentRegionMax();
+	const auto scrollY = ImGui::GetScrollY();
+
+	const float breakpoinBarWidth = mCharAdvance.y;
+	auto breakBarA = ImVec2(cursorScreenPos.x, cursorScreenPos.y + scrollY);
+	auto breakBarB = ImVec2(breakBarA.x + breakpoinBarWidth, breakBarA.y + contentSize.y + scrollY);
+
+	return ImRect(breakBarA, breakBarB).Contains(mousePos);
 }
 
 ImVec2 TextEditor::MouseDistanceOutsideTextArea() const
@@ -631,6 +654,27 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 				textAreaHeld = click || ImGui::IsMouseDown(0);
 			}
+			else if(MouseOverBreakpoints()) // Check for breakpoint changes
+			{
+				if(ImGui::IsMouseClicked(0))
+				{
+					auto line = ScreenPosToLineNumber(ImGui::GetMousePos());
+					if(line < mLines.size() + 1)
+					{
+						const auto found = mBreakpoints.find(line);
+						if(found == mBreakpoints.end())
+						{
+							mBreakpoints.insert(line);
+						}
+						else
+						{
+							mBreakpoints.erase(found);
+						}
+
+						mBreakpointsModified = true;
+					}
+				}
+			}
 		}
 
 		//if (!ImGui::IsMouseDown(0))
@@ -735,8 +779,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
 			{
-				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
-				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Breakpoint]);
+				const float breakpointRadius = mCharAdvance.y / 2 - 2;
+				ImVec2 circlePos = { lineStartScreenPos.x + breakpointRadius + 2, lineStartScreenPos.y + breakpointRadius + 2 };
+				drawList->AddCircleFilled(circlePos, (mCharAdvance.y / 2) - 2, 0xff0000ff);
 			}
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
@@ -854,6 +899,15 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		EnsureCursorVisible();
 		ImGui::SetWindowFocus();
 		mScrollToCursor = false;
+	}
+
+	if(mBreakpointsModified)
+	{
+		if(mBreakpointsModifiedCallback)
+		{
+			mBreakpointsModifiedCallback(this);
+		}
+		mBreakpointsModified = false;
 	}
 
 	ImGui::PopAllowKeyboardFocus();

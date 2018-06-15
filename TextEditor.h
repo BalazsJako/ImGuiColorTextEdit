@@ -125,6 +125,7 @@ public:
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
+	using BreakpointsModifiedCallback = void(*)(TextEditor*);
 	
 	struct Glyph
 	{
@@ -172,7 +173,8 @@ public:
 	void SetPalette(const Palette& aValue);
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
-	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
+	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
+	void SetBreakPointsChangedCallback(BreakpointsModifiedCallback callback) { mBreakpointsModifiedCallback = callback; }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -285,6 +287,7 @@ private:
 	int InsertTextAt(Coordinates& aWhere, const char* aValue);
 	void AddUndo(UndoRecord& aValue);
 	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
+	unsigned int ScreenPosToLineNumber(const ImVec2& aPosition) const;
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
 	bool IsOnWordBoundary(const Coordinates& aAt) const;
@@ -298,6 +301,7 @@ private:
 	std::string GetWordAt(const Coordinates& aCoords) const;
 
 	bool MouseOverText() const;
+	bool MouseOverBreakpoints() const;
 	ImVec2 MouseDistanceOutsideTextArea() const;
 
 	float mLineSpacing;
@@ -322,6 +326,8 @@ private:
 
 	bool mCheckMultilineComments;
 	Breakpoints mBreakpoints;
+	bool mBreakpointsModified;
+	BreakpointsModifiedCallback mBreakpointsModifiedCallback;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
