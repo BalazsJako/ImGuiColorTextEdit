@@ -921,18 +921,25 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 void TextEditor::SetText(const std::string & aText)
 {
 	mLines.clear();
-	for (auto chr : aText)
+	if (aText.empty())
 	{
-		if (mLines.empty())
-			mLines.push_back(Line());
-		if (chr == '\n')
-			mLines.push_back(Line());
-		else
+		mLines.push_back(Line());
+	}
+	else
+	{
+		for (auto chr : aText)
 		{
-			mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
-		}
+			if (mLines.empty())
+				mLines.push_back(Line());
+			if (chr == '\n')
+				mLines.push_back(Line());
+			else
+			{
+				mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
+			}
 
-		mTextChanged = true;
+			mTextChanged = true;
+		}
 	}
 
 	mUndoIndex = 0;
