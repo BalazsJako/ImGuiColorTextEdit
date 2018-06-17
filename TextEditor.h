@@ -174,6 +174,7 @@ public:
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
+	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } 
 	void SetBreakPointsChangedCallback(BreakpointsModifiedCallback callback) { mBreakpointsModifiedCallback = callback; }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
