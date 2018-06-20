@@ -171,7 +171,8 @@ public:
 
 	const Palette& GetPalette() const { return mPalette; }
 	void SetPalette(const Palette& aValue);
-
+	
+	void SetStatementMarker(int line);
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
 	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } 
@@ -326,6 +327,7 @@ private:
 	RegexList mRegexList;
 
 	bool mCheckMultilineComments;
+	int mCurrentStatement;
 	Breakpoints mBreakpoints;
 	bool mBreakpointsModified;
 	BreakpointsModifiedCallback mBreakpointsModifiedCallback;

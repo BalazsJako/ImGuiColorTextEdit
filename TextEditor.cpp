@@ -41,6 +41,7 @@ TextEditor::TextEditor()
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
 	, mCheckMultilineComments(true)
+	, mCurrentStatement(-1)
 	, mBreakpointsModified(false)
 	, mBreakpointsModifiedCallback(nullptr)
 {
@@ -66,6 +67,11 @@ void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
 void TextEditor::SetPalette(const Palette & aValue)
 {
 	mPalette = aValue;
+}
+
+void TextEditor::SetStatementMarker(int line)
+{
+	mCurrentStatement = line;
 }
 
 int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex)
@@ -782,6 +788,25 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				const float breakpointRadius = mCharAdvance.y / 2 - 2;
 				ImVec2 circlePos = { lineStartScreenPos.x + breakpointRadius + 2, lineStartScreenPos.y + breakpointRadius + 2 };
 				drawList->AddCircleFilled(circlePos, (mCharAdvance.y / 2) - 2, 0xff0000ff);
+			}
+
+			// Draw statement marker
+			if(mCurrentStatement - 1 == lineNo)
+			{
+				const float breakpointRadius = mCharAdvance.y / 2 - 2;
+				const float triangleRadius = breakpointRadius - 1;
+				ImVec2 circlePos = { lineStartScreenPos.x + breakpointRadius + 2, lineStartScreenPos.y + breakpointRadius + 2 };
+
+				float rad = IM_PI * 2.0f / 3.0f;
+				float x = cos(rad) * triangleRadius;
+				float y = sin(rad) * triangleRadius;
+
+				ImVec2 a = circlePos;
+				a.x += triangleRadius;
+				ImVec2 b = { circlePos.x + x, circlePos.y - y };
+				ImVec2 c = { circlePos.x + x, circlePos.y + y };
+
+				drawList->AddTriangleFilled(a,b,c, 0xff00ddff);
 			}
 
 			auto errorIt = mErrorMarkers.find(lineNo + 1);
