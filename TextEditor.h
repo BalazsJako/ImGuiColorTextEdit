@@ -279,6 +279,7 @@ private:
 	void ColorizeInternal();
 	int TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
+	void EnsureLineVisible(int line);
 	int GetPageSize() const;
 	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
 	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
@@ -318,6 +319,7 @@ private:
 	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
+	bool mScrollToStatementMarker;
 	bool mTextChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
