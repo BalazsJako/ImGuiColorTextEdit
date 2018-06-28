@@ -36,7 +36,7 @@ TextEditor::TextEditor()
 	, mReadOnly(false)
 	, mWithinRender(false)
 	, mScrollToCursor(false)
-	, mScrollToStatementMarker(false)
+	, mShouldScrollToLine(false)
 	, mTextChanged(false)
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
@@ -76,7 +76,7 @@ void TextEditor::SetStatementMarker(int line)
 
 	if(mCurrentStatement != -1)
 	{
-		mScrollToStatementMarker = true;
+		EnsureLineVisible(line);
 	}
 }
 
@@ -932,11 +932,11 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		mScrollToCursor = false;
 	}
 
-	if(mScrollToStatementMarker)
+	if(mShouldScrollToLine)
 	{
-		EnsureLineVisible(mCurrentStatement);
+		EnsureLineVisible(mScrollToLine);
 		ImGui::SetWindowFocus();
-		mScrollToStatementMarker = false;
+		mShouldScrollToLine = false;
 	}
 
 	if(mBreakpointsModified)
@@ -1601,6 +1601,31 @@ bool TextEditor::IsDirty() const
 	return mUndoSaveIndex != mUndoIndex;
 }
 
+void TextEditor::EnsureLineVisible(int line)
+{
+	if (!mWithinRender)
+	{
+		mShouldScrollToLine = true;
+		mScrollToLine = std::max(0, std::min(line, static_cast<int>(mLines.size())));
+		return;
+	}
+
+	float scrollY = ImGui::GetScrollY();
+
+	auto height = ImGui::GetWindowHeight();
+
+	auto top = 1 + (int)ceil(scrollY / mCharAdvance.y);
+	auto bottom = (int)ceil((scrollY + height) / mCharAdvance.y);
+
+	auto pos = SanitizeCoordinates({ line, 0 });
+
+	if (line < top)
+		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + (height / mCharAdvance.y / 2.0f)) * mCharAdvance.y - height));
+	if (line > bottom)
+		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + (height / mCharAdvance.y / 2.0f)) * mCharAdvance.y - height));
+	ImGui::SetScrollX(0);
+}
+
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
 	static Palette p = { {
@@ -1906,30 +1931,6 @@ void TextEditor::EnsureCursorVisible()
 		ImGui::SetScrollX(std::max(0.0f, (len + cTextStart - 4) * mCharAdvance.x));
 	if (len + cTextStart > right - 4)
 		ImGui::SetScrollX(std::max(0.0f, (len + cTextStart + 4) * mCharAdvance.x - width));
-}
-
-void TextEditor::EnsureLineVisible(int line)
-{
-	if (!mWithinRender)
-	{
-		mScrollToStatementMarker = true;
-		return;
-	}
-
-	float scrollY = ImGui::GetScrollY();
-
-	auto height = ImGui::GetWindowHeight();
-
-	auto top = 1 + (int)ceil(scrollY / mCharAdvance.y);
-	auto bottom = (int)ceil((scrollY + height) / mCharAdvance.y);
-
-	auto pos = SanitizeCoordinates({line, 0});
-
-	if (line < top)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + (height / mCharAdvance.y / 2.0f)) * mCharAdvance.y - height));
-	if (line > bottom)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + (height / mCharAdvance.y / 2.0f)) * mCharAdvance.y - height));
-	ImGui::SetScrollX(0);
 }
 
 int TextEditor::GetPageSize() const
