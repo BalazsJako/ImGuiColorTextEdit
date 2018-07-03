@@ -325,6 +325,7 @@ private:
 	bool mTextChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
+	bool mTextAreaHeld;
 
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;

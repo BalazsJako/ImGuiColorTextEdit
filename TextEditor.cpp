@@ -41,6 +41,7 @@ TextEditor::TextEditor()
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
+	, mTextAreaHeld(false)
 	, mCheckMultilineComments(true)
 	, mCurrentStatement(-1)
 	, mBreakpointsModified(false)
@@ -611,7 +612,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		}
 	}
 
-	static bool textAreaHeld = false;
 	if (ImGui::IsWindowHovered())
 	{
 		static float lastClick = -1.0f;
@@ -664,7 +664,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					lastClick = ImGui::GetTime();
 				}
 
-				textAreaHeld = click || ImGui::IsMouseDown(0);
+				mTextAreaHeld = click || ImGui::IsMouseDown(0);
 			}
 			else if(MouseOverBreakpoints()) // Check for breakpoint changes
 			{
@@ -694,7 +694,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	}
 
 	// Continue to select text while mouse is held
-	if (textAreaHeld)
+	if (mTextAreaHeld)
 	{
 		const float scrollCounterMax = 4.0f;
 		static float scrollVerticalCounter = scrollCounterMax;
@@ -702,7 +702,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		// Not holding the button down anymore?
 		if(!ImGui::IsMouseDown(0))
 		{
-			textAreaHeld = false;
+			mTextAreaHeld = false;
 			//Reset counter
 			scrollVerticalCounter = scrollCounterMax;
 		}
