@@ -222,6 +222,7 @@ public:
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
 	void MarkSaved();
+	void MarkDirty();
 	bool IsDirty() const;
 
 	void EnsureLineVisible(int line);

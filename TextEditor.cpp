@@ -1596,6 +1596,11 @@ void TextEditor::MarkSaved()
 	mUndoSaveIndex = mUndoIndex;
 }
 
+void TextEditor::MarkDirty()
+{
+	mUndoSaveIndex = -1;
+}
+
 bool TextEditor::IsDirty() const
 {
 	return mUndoSaveIndex != mUndoIndex;
