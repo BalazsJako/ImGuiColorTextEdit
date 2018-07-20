@@ -9,6 +9,7 @@
 #include <map>
 #include <regex>
 #include "imgui.h"
+#include <functional>
 
 class TextEditor
 {
@@ -125,7 +126,6 @@ public:
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
-	using BreakpointsModifiedCallback = void(*)(TextEditor*);
 	
 	struct Glyph
 	{
@@ -176,7 +176,7 @@ public:
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
 	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } 
-	void SetBreakPointsChangedCallback(BreakpointsModifiedCallback callback) { mBreakpointsModifiedCallback = callback; }
+	void SetBreakPointsChangedCallback(std::function<void(TextEditor*)> callback) { mBreakpointsModifiedCallback = std::move(callback); }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -336,7 +336,7 @@ private:
 	int mCurrentStatement;
 	Breakpoints mBreakpoints;
 	bool mBreakpointsModified;
-	BreakpointsModifiedCallback mBreakpointsModifiedCallback;
+	std::function<void(TextEditor*)> mBreakpointsModifiedCallback;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
