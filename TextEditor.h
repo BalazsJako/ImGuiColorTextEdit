@@ -10,6 +10,10 @@
 #include <regex>
 #include "imgui.h"
 #include <functional>
+#include "LuaToken.h"
+
+
+class LuaLexer;
 
 class TextEditor
 {
@@ -136,10 +140,15 @@ public:
 		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
 	};
 
-	typedef std::vector<Glyph> Line;
+	struct Line
+	{
+		std::vector<Glyph> mGlyphs;
+		std::vector<LuaToken> mTokens;
+	};
+
 	typedef std::vector<Line> Lines;
 
-	struct LanguageDefinition
+	/*struct LanguageDefinition
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
@@ -161,13 +170,15 @@ public:
 		static LanguageDefinition SQL();
 		static LanguageDefinition AngelScript();
 		static LanguageDefinition Lua();
-	};
+	};*/
 
 	TextEditor();
 	~TextEditor();
 
-	void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
-	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }
+	void ClearLexer();
+
+	/*void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
+	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }*/
 
 	const Palette& GetPalette() const { return mPalette; }
 	void SetPalette(const Palette& aValue);
@@ -277,9 +288,9 @@ private:
 	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
-	void Colorize(int aFromLine = 0, int aCount = -1);
-	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
-	void ColorizeInternal();
+	//void Colorize(int aFromLine = 0, int aCount = -1);
+	//void ColorizeRange(int aFromLine = 0, int aToLine = 0);
+	//void ColorizeInternal();
 	int TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
@@ -309,6 +320,10 @@ private:
 	bool MouseOverBreakpoints() const;
 	ImVec2 MouseDistanceOutsideTextArea() const;
 
+	void LexAll();
+
+	
+
 	float mLineSpacing;
 	Lines mLines;
 	EditorState mState;
@@ -324,15 +339,15 @@ private:
 	bool mShouldScrollToLine;
 	int mScrollToLine;
 	bool mTextChanged;
-	int mColorRangeMin, mColorRangeMax;
+	//int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
 	bool mTextAreaHeld;
 
 	Palette mPalette;
-	LanguageDefinition mLanguageDefinition;
-	RegexList mRegexList;
+	/*LanguageDefinition mLanguageDefinition;*/
+	//RegexList mRegexList;
 
-	bool mCheckMultilineComments;
+	//bool mCheckMultilineComments;
 	int mCurrentStatement;
 	Breakpoints mBreakpoints;
 	bool mBreakpointsModified;
@@ -340,5 +355,7 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
+
+	//LuaLexer* mLexer;
 };
 
