@@ -57,13 +57,7 @@ TextEditor::TextEditor()
 
 TextEditor::~TextEditor()
 {
-	//if(mLexer)
-	//	delete mLexer;
-}
 
-void TextEditor::ClearLexer()
-{
-	//mLexer = nullptr;
 }
 
 //void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
@@ -199,7 +193,6 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 	}
 
 	mTextChanged = true;
-	LexAll();
 }
 
 int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValue)
@@ -250,7 +243,6 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 		chr = *(++aValue);
 
 		mTextChanged = true;
-		LexAll();
 	}
 
 	return totalLines;
@@ -383,7 +375,6 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
 
 	mTextChanged = true;
-	LexAll();
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -412,7 +403,6 @@ void TextEditor::RemoveLine(int aIndex)
 	mLines.erase(mLines.begin() + aIndex);
 
 	mTextChanged = true;
-	LexAll();
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -465,6 +455,21 @@ bool TextEditor::MouseOverText() const
 	const auto areaA = ImVec2(cursorScreenPos.x + breakAndLineNumberWidth, cursorScreenPos.y + scrollY);
 	const auto areaB = ImVec2(cursorScreenPos.x + contentSize.x + scrollX * 2, areaA.y + contentSize.y + scrollY);
 	return ImRect(areaA, areaB).Contains(mousePos);
+}
+
+bool TextEditor::MouseOverLineNumbers() const
+{
+	const auto mousePos = ImGui::GetMousePos();
+	const auto cursorScreenPos = ImGui::GetCursorScreenPos();
+	const auto contentSize = ImGui::GetContentRegionMax();
+	const auto scrollY = ImGui::GetScrollY();
+	const float breakpoinBarWidth = mCharAdvance.y;
+
+	auto breakAndLineNumberWidth = mCharAdvance.x * cTextStart;
+	auto lineBarA = ImVec2(cursorScreenPos.x + breakpoinBarWidth, cursorScreenPos.y + scrollY);
+	auto lineBarB = ImVec2(lineBarA.x + breakAndLineNumberWidth - breakpoinBarWidth, lineBarA.y + contentSize.y + scrollY);
+
+	return ImRect(lineBarA, lineBarB).Contains(mousePos);
 }
 
 bool TextEditor::MouseOverBreakpoints() const
@@ -526,12 +531,15 @@ ImVec2 TextEditor::MouseDistanceOutsideTextArea() const
 void TextEditor::LexAll()
 {
 	LuaLexer(mLines).LexAll();
-	//mLexer->LexAll();
 }
 
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
+
+	if(mTextChanged)
+		LexAll();
+
 	mTextChanged = false;
 
 	ImGuiIO& io = ImGui::GetIO();
@@ -645,7 +653,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				auto tripleClick = click && !doubleClick && t - lastClick < io.MouseDoubleClickTime;
 				if (tripleClick)
 				{
-					printf("triple\n");
+					//printf("triple\n");
 					if (!ctrl)
 					{
 						mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -657,7 +665,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 				else if (doubleClick)
 				{
-					printf("double\n");
+					//printf("double\n");
 					if (!ctrl)
 					{
 						mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -672,7 +680,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				}
 				else if (click)
 				{
-					printf("single\n");
+					//printf("single\n");
 					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
 					if (ctrl)
 						mSelectionMode = SelectionMode::Word;
@@ -767,9 +775,37 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	int appendIndex = 0;
 	int longest = cTextStart;
 
+	// TODO contentSize test print
+	//if(alt)
+	//{
+	//	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
+	//	auto contentSize = ImGui::GetWindowContentRegionMax();
+	//	auto breakAndLineNumberWidth = mCharAdvance.x * cTextStart;
+	//	//std::cout << "( " << contentSize.x << ", " << contentSize.y << " )\n";
+	//	std::cout << "( " << cursorScreenPos.x << ", " << cursorScreenPos.y << " )\n";
+	//}
+
+
+
+
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
 	auto scrollX = ImGui::GetScrollX();
 	auto scrollY = ImGui::GetScrollY();
+
+
+	/*const float breakpoinBarWidth = mCharAdvance.y;
+	auto breakBarA = ImVec2(cursorScreenPos.x, cursorScreenPos.y + scrollY);
+	auto breakBarB = ImVec2(breakBarA.x + breakpoinBarWidth, breakBarA.y + contentSize.y + scrollY);
+	drawList->AddRectFilled(breakBarA, breakBarB, ImGui::ColorConvertFloat4ToU32({ 0,0,1,0.5 }));
+
+	auto breakAndLineNumberWidth = mCharAdvance.x * cTextStart;
+	auto lineBarA = ImVec2(cursorScreenPos.x + breakpoinBarWidth, cursorScreenPos.y + scrollY);
+	auto lineBarB = ImVec2(lineBarA.x + breakAndLineNumberWidth - breakpoinBarWidth, lineBarA.y + contentSize.y + scrollY);
+	drawList->AddRectFilled(lineBarA, lineBarB, ImGui::ColorConvertFloat4ToU32({ 1,0,0,0.5 }));
+
+	auto textAreaA = ImVec2(cursorScreenPos.x + breakAndLineNumberWidth, cursorScreenPos.y + scrollY);
+	auto textAreaB = ImVec2(cursorScreenPos.x + contentSize.x + scrollX * 2, textAreaA.y + contentSize.y + scrollY);
+	drawList->AddRectFilled(textAreaA, textAreaB, ImGui::ColorConvertFloat4ToU32({ 0,1,0,0.5 }));*/
 
 	auto lineNo = (int)floor(scrollY / mCharAdvance.y);
 	auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / mCharAdvance.y)));
@@ -983,7 +1019,6 @@ void TextEditor::SetText(const std::string & aText)
 	{
 		mLines.push_back(Line());
 		mTextChanged = true;
-		LexAll();
 	}
 	else
 	{
@@ -999,7 +1034,6 @@ void TextEditor::SetText(const std::string & aText)
 			}
 
 			mTextChanged = true;
-			LexAll();
 		}
 	}
 
@@ -1053,7 +1087,6 @@ void TextEditor::EnterCharacter(Char aChar)
 	}
 
 	mTextChanged = true;
-	LexAll();
 
 	u.mAdded = aChar;
 	u.mAddedEnd = GetActualCursorCoordinates();
@@ -1434,7 +1467,6 @@ void TextEditor::Delete()
 		}
 
 		mTextChanged = true;
-		LexAll();
 
 		//Colorize(pos.mLine, 1);
 	}
@@ -1498,7 +1530,6 @@ void TextEditor::BackSpace()
 		}
 
 		mTextChanged = true;
-		LexAll();
 
 		EnsureCursorVisible();
 		//Colorize(mState.mCursorPosition.mLine, 1);

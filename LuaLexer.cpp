@@ -1,6 +1,7 @@
 #include "LuaLexer.h"
 
 #include "LuaToken.h"
+#include <iostream>
 
 void LuaLexer::LexAll()
 {
@@ -25,23 +26,27 @@ void LuaLexer::LexAll()
 		{
 		case '+':
 			AddToken(LuaToken::TYPE_PLUS);
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			break;
 		case '-':
+			
 			if (PeekNext() == '-') // Comment or long comment
 			{
+				ColorCurrent(TextEditor::PaletteIndex::Comment);
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::Comment);
 				const size_t commentStart = _col - 2;
 
 				auto [longComment, level] = ConsumeBeginLongComment(commentStart);
 
 				if(longComment)
 				{
-					if(!ConsumeLongBracket(level))
+					if(!ConsumeLongBracket(level, TextEditor::PaletteIndex::Comment))
 						return;
 				}
 				else
 				{
-					// Point at the second '-'
+					// Point at the second '-' or at the point ConsumeBeginLongComment have placed us
 					size_t commentEnd = _col - 1;
 
 					// Consume characters (and increment commentEnd) until end of line or end of file
@@ -57,31 +62,42 @@ void LuaLexer::LexAll()
 						++commentEnd;
 
 						GetNext();
+						ColorCurrent(TextEditor::PaletteIndex::Comment);
 					} while (true);
 				}
 			}
 			else
+			{
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				AddToken(LuaToken::TYPE_MINUS);
+			}
 			break;
 		case '*':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_MUL);
 			break;
 		case '/':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_DIV);
 			break;
 		case '%':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_MOD);
 			break;
 		case '^':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_EXP);
 			break;
 		case '#':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_HASH);
 			break;
 		case '=':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			if (PeekNext() == '=')
 			{
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				AddToken(LuaToken::TYPE_EQ);
 			}
 			else
@@ -90,40 +106,53 @@ void LuaLexer::LexAll()
 		case '~':
 			if(PeekNext() == '=')
 			{
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				AddToken(LuaToken::TYPE_NEQ);
 			}
 			else // Adding error, but keep parsing so the rest of the code get syntax highlight
+			{
+				ColorCurrent(TextEditor::PaletteIndex::ErrorMarker);
 				AddToken({ LuaToken::TYPE_ERROR_STRAY_TILDE });
+			}
 			break;
 		case '<':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			if (PeekNext() == '=')
 			{
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				AddToken(LuaToken::TYPE_LE);
 			}
-			else
+			else 
 				AddToken(LuaToken::TYPE_LT);
 			break;
 		case '>':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			if (PeekNext() == '=')
 			{
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::Default);
 				AddToken(LuaToken::TYPE_GE);
 			}
 			else
 				AddToken(LuaToken::TYPE_GT);
 			break;
 		case '(':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_LEFT_B);
 			break;
 		case ')':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_RIGHT_B);
 			break;
 		case '{':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_LEFT_CB);
 			break;
 		case '}':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_RIGHT_CB);
 			break;
 		case '[':
@@ -134,7 +163,7 @@ void LuaLexer::LexAll()
 
 				if (longString)
 				{
-					if (!ConsumeLongBracket(level))
+					if (!ConsumeLongBracket(level, TextEditor::PaletteIndex::String))
 						return;
 				}
 				else
@@ -142,28 +171,36 @@ void LuaLexer::LexAll()
 					// ConsumeBeginLongString might have failed to match. Need move _col back
 					_col = stringStart + 1;
 
+					ColorCurrent(TextEditor::PaletteIndex::Default);
 					AddToken(LuaToken::TYPE_LEFT_SB);
 				}
 			}
 			break;
 		case ']':
+			ColorCurrent(TextEditor::PaletteIndex::Default);
 			AddToken(LuaToken::TYPE_RIGHT_SB);
 			break;
 		case ';':
 			AddToken(LuaToken::TYPE_SEMI_COLON);
+			ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 			break;
 		case ':':
 			AddToken(LuaToken::TYPE_COLON);
+			ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 			break;
 		case ',':
 			AddToken(LuaToken::TYPE_COMMA);
+			ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 			break;
 		case '.':
-			if (PeekNext() == '.')
+			c = PeekNext();
+			if (c == '.')
 			{
+				ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 				GetNext();
 				if (PeekNext() == '.')
 				{
+					ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 					GetNext();
 					AddToken(LuaToken::TYPE_VARARG);
 				}
@@ -171,31 +208,60 @@ void LuaLexer::LexAll()
 					AddToken(LuaToken::TYPE_CONCAT);
 			}
 			else
+			{
+				if(IsBeginningOfIdentifier(c))
+					break;
+
+				if (isdigit(c))
+				{
+					_identifierStart = _col - 1;
+					ConsumeDotNumber(c);
+					break;
+				}
+				
+				ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 				AddToken(LuaToken::TYPE_DOT);
+			}
 			break;
 		case '\'':
+			ColorCurrent(TextEditor::PaletteIndex::String);
 			if(!ConsumeString<'\''>(c))
 				return;
 			break;
 		case '"':
+			ColorCurrent(TextEditor::PaletteIndex::String);
 			if (!ConsumeString<'"'>(c))
 				return;
 			break;
 		default:
+
+			// Start for ConsumeNumber
+			_identifierStart = _col - 1;
+			
 			if (IsBeginningOfIdentifier(c))
+			{
 				ConsumeIdentifier(c);
-			else
-				AddToken({ LuaToken::TYPE_ERROR_BAD_CHARACTER });
+				break;
+			}
+
+			if(isdigit(c))
+			{
+				ConsumeNumber(c);
+				break;
+			}
+
+			ColorCurrent(TextEditor::PaletteIndex::ErrorMarker);
+			AddToken({ LuaToken::TYPE_ERROR_BAD_CHARACTER });
 			break;
 		}
 
-		// TODO Verify that all operation leave the next character alone
 		c = GetNext();
 	}
 }
 
 char LuaLexer::GetNext()
 {
+	//std::cout << "GetNext: \t" << _line << ", " << _col << " ; ";
 	std::vector<TextEditor::Glyph>& glyphs = _lines[_line].mGlyphs;
 
 	// After last character on this line?
@@ -208,12 +274,16 @@ char LuaLexer::GetNext()
 			++_line;
 			_lines[_line].mTokens.clear();
 
+			//std::cout << _line << ", " << _col << " : \\n\n";
 			return '\n';
 		}
 
+		//std::cout << _line << ", " << _col << " : \\0\n";
 		return '\0';
 	}
 
+	//std::cout << _line << ", " << _col + 1 << " : " << glyphs[_col].mChar << '\n';
+	glyphs[_col].mColorIndex = TextEditor::PaletteIndex::Default;
 	return glyphs[_col++].mChar;
 }
 
@@ -227,13 +297,35 @@ char LuaLexer::PeekNext() const
 		// More lines after this one?
 		if (_line + 1 < _lines.size())
 		{
+			//std::cout << "PeekNext: \t" << _line << ", " << _col << " : \\n\n";
 			return '\n';
 		}
 
+		//std::cout << "PeekNext: \t" << _line << ", " << _col << " : \\0\n";
 		return '\0';
 	}
 
+	//std::cout << "PeekNext: \t" << _line << ", " << _col << " : " << glyphs[_col].mChar << '\n';
 	return glyphs[_col].mChar;
+}
+
+
+void LuaLexer::ColorCurrent(TextEditor::PaletteIndex color) const
+{
+	// Current is a newline
+	if(_col == 0)
+		return;
+
+	_lines[_line].mGlyphs[_col - 1].mColorIndex = color;
+}
+
+void LuaLexer::ColorRange(size_t begin, size_t end, TextEditor::PaletteIndex color) const
+{
+	auto& glyphs = _lines[_line].mGlyphs;
+	for(size_t i = begin; i <= end; ++i)
+	{
+		glyphs[i].mColorIndex = color;
+	}
 }
 
 void LuaLexer::AddToken(LuaToken&& token) const
@@ -247,11 +339,13 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongComment(size_t pos)
 	if (PeekNext() == '[')
 	{
 		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::Comment);
 
 		char c{ PeekNext() };
 		if (c == '[')
 		{
 			GetNext();
+			ColorCurrent(TextEditor::PaletteIndex::Comment);
 			AddToken({ LuaToken::TYPE_BEGIN_LONG_COMMENT, {0, pos} });
 			return { true, 0 };
 		}
@@ -259,6 +353,7 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongComment(size_t pos)
 		if (c == '=')
 		{
 			GetNext();
+			ColorCurrent(TextEditor::PaletteIndex::Comment);
 			LuaToken::Level level {1};
 
 			bool search = true;
@@ -270,10 +365,12 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongComment(size_t pos)
 				{
 				case '[':
 					GetNext();
+					ColorCurrent(TextEditor::PaletteIndex::Comment);
 					AddToken({ LuaToken::TYPE_BEGIN_LONG_COMMENT, {level, pos} });
 					return { false, level };
 				case '=':
 					GetNext();
+					ColorCurrent(TextEditor::PaletteIndex::Comment);
 					++level;
 					break;
 				default:
@@ -293,13 +390,16 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongString(size_t pos)
 	char c{ PeekNext() };
 	if (c == '[')
 	{
+		ColorCurrent(TextEditor::PaletteIndex::String);
 		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::String);
 		AddToken({ LuaToken::TYPE_BEGIN_LONG_STRING, {0, pos} });
 		return { true, 0 };
 	}
 
 	if (c == '=')
 	{
+		ColorCurrent(TextEditor::PaletteIndex::String);
 		GetNext();
 		LuaToken::Level level {1};
 
@@ -311,10 +411,13 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongString(size_t pos)
 			switch (c)
 			{
 			case '[':
+				ColorCurrent(TextEditor::PaletteIndex::String);
 				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::String);
 				AddToken({ LuaToken::TYPE_BEGIN_LONG_STRING, {level, pos} });
-				return { false, level };
+				return { true, level };
 			case '=':
+				ColorCurrent(TextEditor::PaletteIndex::String);
 				GetNext();
 				++level;
 				break;
@@ -329,7 +432,7 @@ std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongString(size_t pos)
 	return { false, 0 };
 }
 
-bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
+bool LuaLexer::ConsumeLongBracket(LuaToken::Level level, TextEditor::PaletteIndex color)
 {
 	if(level == 0)
 	{
@@ -342,6 +445,7 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 			{
 			case ']':
 				GetNext();
+				ColorCurrent(color);
 
 				c = PeekNext();
 				switch (c)
@@ -349,12 +453,14 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 				case ']':
 					AddToken({ LuaToken::TYPE_END_LONG_BRACKET, LuaToken::Bracket(level, _col) });
 					GetNext();
+					ColorCurrent(color);
 					return true;
 				case '\0':
 					search = false;
 					break;
 				default:
 					GetNext();
+					ColorCurrent(color);
 					c = PeekNext();
 					break;
 				}
@@ -364,6 +470,7 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 				break;
 			default:
 				GetNext();
+				ColorCurrent(color);
 				c = PeekNext();
 				break;
 			}
@@ -383,6 +490,7 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 			case ']':
 				{
 					GetNext();
+					ColorCurrent(color);
 					c = PeekNext();
 
 					bool searchEquals = true;
@@ -391,18 +499,21 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 						switch (c)
 						{
 						case ']':
-							if (level != currentLevel)
+							if (level == currentLevel)
 							{
 								AddToken({ LuaToken::TYPE_END_LONG_BRACKET, LuaToken::Bracket(level, _col) });
 								GetNext();
+								ColorCurrent(color);
 								return true;
 							}
 
 							GetNext();
+							ColorCurrent(color);
 							searchEquals = false;
 							break;
 						case '=':
 							GetNext();
+							ColorCurrent(color);
 							c = PeekNext();
 							++currentLevel;
 							if (currentLevel > level)
@@ -415,6 +526,7 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 							break;
 						default:
 							GetNext();
+							ColorCurrent(color);
 							c = PeekNext();
 							searchEquals = false;
 							break;
@@ -427,6 +539,7 @@ bool LuaLexer::ConsumeLongBracket(LuaToken::Level level)
 				break;
 			default:
 				GetNext();
+				ColorCurrent(color);
 				c = PeekNext();
 				break;
 			}
@@ -444,43 +557,33 @@ void LuaLexer::ConsumeIdentifier(char c)
 	switch (c)
 	{
 	case 'a':
-		GetNext();
 		return ConsumeAnd();
 	case 'b':
-		GetNext();
 		return ConsumeBreak();
 	case 'd':
-		GetNext();
 		return ConsumeDo();
+	case 'e':
+		return ConsumeEndElseElseif();
 	case 'f':
-		GetNext();
 		return ConsumeFalseForFunction();
 	case 'i':
-		GetNext();
 		return ConsumeIfIn();
 	case 'l':
-		GetNext();
 		return ConsumeLocal();
 	case 'n':
-		GetNext();
 		return ConsumeNilNot();
 	case 'o':
-		GetNext();
 		return ConsumeOr();
 	case 'r':
-		GetNext();
 		return ConsumeRepeatReturn();
 	case 't':
-		GetNext();
 		return ConsumeThenTrue();
 	case 'u':
-		GetNext();
 		return ConsumeUntil();
 	case 'w':
-		GetNext();
 		return ConsumeWhile();
 	default:
-		return ConsumeName();
+		return ConsumeName(PeekNext());
 	}
 }
 
@@ -488,18 +591,19 @@ void LuaLexer::ConsumeAnd()
 {
 	char c = PeekNext();
 	if(c != 'n')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'd')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if(IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_AND});
 }
 
@@ -507,13 +611,14 @@ void LuaLexer::ConsumeDo()
 {
 	char c = PeekNext();
 	if (c != 'o')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_DO});
 }
 
@@ -521,28 +626,29 @@ void LuaLexer::ConsumeBreak()
 {
 	char c = PeekNext();
 	if (c != 'r')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'e')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'a')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'k')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_BREAK});
 }
 
@@ -556,23 +662,24 @@ void LuaLexer::ConsumeFalseForFunction()
 
 		c = PeekNext();
 		if (c != 'l')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 's')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'e')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_FALSE});
 		break;
 	case 'o':
@@ -580,13 +687,14 @@ void LuaLexer::ConsumeFalseForFunction()
 		
 		c = PeekNext();
 		if (c != 'r')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_FOR});
 		break;
 	case 'u':
@@ -594,42 +702,43 @@ void LuaLexer::ConsumeFalseForFunction()
 
 		c = PeekNext();
 		if (c != 'n')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'c')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 't')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'i')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'o')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'n')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_FUNCTION});
 		break;
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -643,8 +752,9 @@ void LuaLexer::ConsumeIfIn()
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_IF});
 		break;
 	case 'n':
@@ -652,12 +762,13 @@ void LuaLexer::ConsumeIfIn()
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_IN});
 		break;
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -665,28 +776,29 @@ void LuaLexer::ConsumeLocal()
 {
 	char c = PeekNext();
 	if (c != 'o')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'c')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'a')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'l')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_LOCAL});
 }
 
@@ -700,20 +812,21 @@ void LuaLexer::ConsumeEndElseElseif()
 
 		c = PeekNext();
 		if (c != 'd')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_END});
 		break;
 	case 'l':
 		GetNext();
 		return ConsumeElseElseif();
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -721,34 +834,36 @@ void LuaLexer::ConsumeElseElseif()
 {
 	char c = PeekNext();
 	if (c != 's')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'e')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (!IsPartOfIdentifier(c))
 	{
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_ELSE});
 		return;
 	}
 
 	if (c != 'i')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'f')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_ELSEIF});
 }
 
@@ -762,13 +877,14 @@ void LuaLexer::ConsumeNilNot()
 
 		c = PeekNext();
 		if (c != 'l')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_NIL});
 		break;
 	case 'o':
@@ -776,17 +892,18 @@ void LuaLexer::ConsumeNilNot()
 
 		c = PeekNext();
 		if (c != 't')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_NOT});
 		break;
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -794,13 +911,14 @@ void LuaLexer::ConsumeOr()
 {
 	char c = PeekNext();
 	if (c != 'r')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_OR});
 }
 
@@ -808,7 +926,7 @@ void LuaLexer::ConsumeRepeatReturn()
 {
 	char c = PeekNext();
 	if (c != 'e')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
@@ -819,23 +937,24 @@ void LuaLexer::ConsumeRepeatReturn()
 
 		c = PeekNext();
 		if (c != 'e')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'a')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 't')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_REPEAT});
 		break;
 	case 't':
@@ -843,27 +962,28 @@ void LuaLexer::ConsumeRepeatReturn()
 
 		c = PeekNext();
 		if (c != 'u')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'r')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'n')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_RETURN});
 		break;
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -878,18 +998,19 @@ void LuaLexer::ConsumeThenTrue()
 
 		c = PeekNext();
 		if (c != 'e')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'n')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_THEN});
 		break;
 	case 'r':
@@ -897,22 +1018,23 @@ void LuaLexer::ConsumeThenTrue()
 
 		c = PeekNext();
 		if (c != 'u')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (c != 'e')
-			return ConsumeName();
+			return ConsumeName(c);
 		GetNext();
 
 		c = PeekNext();
 		if (IsPartOfIdentifier(c))
-			return ConsumeName();
+			return ConsumeName(c);
 
+		ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 		AddToken({LuaToken::TYPE_TRUE});
 		break;
 	default:
-		return ConsumeName();
+		return ConsumeName(c);
 	}
 }
 
@@ -920,28 +1042,29 @@ void LuaLexer::ConsumeUntil()
 {
 	char c = PeekNext();
 	if (c != 'n')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 't')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'i')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'l')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_UNTIL});
 }
 
@@ -949,34 +1072,34 @@ void LuaLexer::ConsumeWhile()
 {
 	char c = PeekNext();
 	if (c != 'h')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'i')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'l')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (c != 'e')
-		return ConsumeName();
+		return ConsumeName(c);
 	GetNext();
 
 	c = PeekNext();
 	if (IsPartOfIdentifier(c))
-		return ConsumeName();
+		return ConsumeName(c);
 
+	ColorRange(_identifierStart, _col - 1, TextEditor::PaletteIndex::Keyword);
 	AddToken({LuaToken::TYPE_WHILE});
 }
 
-void LuaLexer::ConsumeName()
+void LuaLexer::ConsumeName(char c)
 {
-	char c = PeekNext();
 	while(IsPartOfIdentifier(c))
 	{
 		GetNext();
@@ -985,6 +1108,122 @@ void LuaLexer::ConsumeName()
 
 	const size_t identifierEnd = _col - 1;
 
+	ColorRange(_identifierStart, identifierEnd, TextEditor::PaletteIndex::Identifier);
 	AddToken({ LuaToken::TYPE_NAME, { _identifierStart, identifierEnd} });
 }
 
+void LuaLexer::ConsumeNumber(char c)
+{
+	const char first = c;
+	c = PeekNext();
+
+	// Is hex number
+	if(first == '0' && (c == 'x' || c == 'X'))
+	{
+		GetNext();
+		return ConsumeHexNumber(PeekNext());
+	}
+
+	// Consume optional digits
+	while (isdigit(c))
+	{
+		GetNext();
+		c = PeekNext();
+	}
+
+	// Optional dot
+	if(c == '.')
+	{
+		return ConsumeDotNumber(c);
+	}
+
+	// TODO identifier characters here cause: malformed number near .n{n}e[-]{n}c
+	// TODO What other characters cause this??? Can end with == ~= or newline or similar
+	if (IsBeginningOfIdentifier(c))
+	{
+		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+		return;
+	}
+
+	const size_t end = _col - 1;
+	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
+	AddToken({ LuaToken::TYPE_NUMBER, _identifierStart, end });
+}
+
+
+void LuaLexer::ConsumeDotNumber(char c)
+{
+	GetNext();
+
+	// Consume optional digits
+	c = PeekNext();
+	while(isdigit(c))
+	{
+		GetNext();
+		c = PeekNext();
+	}
+
+	if(c == 'e' || c == 'E')
+	{
+		GetNext();
+		c = PeekNext();
+
+		// Optional -
+		if (c == '-')
+		{
+			GetNext();
+			c = PeekNext();
+		}
+
+		// Atleast one digit
+		if (!isdigit(c))
+		{
+			AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+			return;
+		}
+			
+		GetNext();
+
+		// Consume all following digits
+		c = PeekNext();
+		while (isdigit(c))
+		{
+			GetNext();
+			c = PeekNext();
+		}
+	}
+
+	// TODO identifier characters here cause: malformed number near .n{n}e[-]{n}c
+	// TODO What other characters cause this??? Can end with == ~= or newline or similar
+	if(IsBeginningOfIdentifier(c))
+	{
+		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col});
+		return;
+	}
+
+	const size_t end = _col - 1;
+	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
+	AddToken({LuaToken::TYPE_NUMBER, _identifierStart, end});
+}
+
+void LuaLexer::ConsumeHexNumber(char c)
+{
+	while(isxdigit(c))
+	{
+		GetNext();
+		c = PeekNext();
+	}
+
+	// TODO identifier characters here cause: malformed number near 0x{nx}
+	// TODO What other characters cause this??? Can end with == ~= or newline or similar
+	if (IsBeginningOfIdentifier(c))
+	{
+		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+		return;
+	}
+
+	const size_t end = _col - 1;
+	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
+	AddToken({ LuaToken::TYPE_NUMBER, _identifierStart, end });
+	return;
+}

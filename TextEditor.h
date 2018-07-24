@@ -12,9 +12,6 @@
 #include <functional>
 #include "LuaToken.h"
 
-
-class LuaLexer;
-
 class TextEditor
 {
 public:
@@ -175,8 +172,6 @@ public:
 	TextEditor();
 	~TextEditor();
 
-	void ClearLexer();
-
 	/*void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
 	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }*/
 
@@ -317,6 +312,7 @@ private:
 	std::string GetWordAt(const Coordinates& aCoords) const;
 
 	bool MouseOverText() const;
+	bool MouseOverLineNumbers() const;
 	bool MouseOverBreakpoints() const;
 	ImVec2 MouseDistanceOutsideTextArea() const;
 
@@ -355,7 +351,5 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
-
-	//LuaLexer* mLexer;
 };
 

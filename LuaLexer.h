@@ -22,6 +22,9 @@ private:
 	char GetNext();
 	char PeekNext() const;
 
+	void ColorCurrent(TextEditor::PaletteIndex color) const;
+	void ColorRange(size_t begin, size_t end, TextEditor::PaletteIndex color) const;
+
 	void AddToken(LuaToken&& token) const;
 
 	template<char Delimiter>
@@ -34,6 +37,7 @@ private:
 		while (searchString)
 		{
 			c = GetNext();
+			ColorCurrent(TextEditor::PaletteIndex::String);
 
 			switch (c)
 			{
@@ -86,7 +90,7 @@ private:
 	// Returns true and level of bracket if a long bracket is detected, false and whatever otherwise
 	std::tuple<bool, LuaToken::Level> ConsumeBeginLongString(size_t pos);
 	
-	bool ConsumeLongBracket(LuaToken::Level level);
+	bool ConsumeLongBracket(LuaToken::Level level, TextEditor::PaletteIndex color);
 
 	void ConsumeIdentifier(char c);
 	void ConsumeAnd();
@@ -103,7 +107,14 @@ private:
 	void ConsumeThenTrue();
 	void ConsumeUntil();
 	void ConsumeWhile();
-	void ConsumeName();
+	void ConsumeName(char c);
+
+	// c is a number from GetNext
+	void ConsumeNumber(char c);
+	// c is the first character peeked after dot
+	void ConsumeDotNumber(char c);
+	// c is first character peeked after x
+	void ConsumeHexNumber(char c);
 
 	static bool IsBeginningOfIdentifier(char c)
 	{
