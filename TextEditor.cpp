@@ -745,10 +745,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 void TextEditor::SetText(const std::string & aText)
 {
 	mLines.clear();
+	mLines.push_back(Line());
 	for (auto chr : aText)
 	{
-		if (mLines.empty())
-			mLines.push_back(Line());
 		if (chr == '\n')
 			mLines.push_back(Line());
 		else
