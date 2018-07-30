@@ -79,8 +79,7 @@ private:
 
 		const size_t stringEnd = _col - 1;
 
-		AddToken({ LuaToken::TYPE_STRING, stringStart, stringEnd });
-
+		AddToken({ LuaToken::TYPE_STRING});
 		return true;
 	}
 
@@ -115,6 +114,8 @@ private:
 	void ConsumeDotNumber(char c);
 	// c is first character peeked after x
 	void ConsumeHexNumber(char c);
+
+	void MalformedNumber(size_t start, size_t end) const;
 
 	static bool IsBeginningOfIdentifier(char c)
 	{

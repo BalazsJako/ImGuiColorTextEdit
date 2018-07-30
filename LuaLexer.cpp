@@ -1109,7 +1109,16 @@ void LuaLexer::ConsumeName(char c)
 	const size_t identifierEnd = _col - 1;
 
 	ColorRange(_identifierStart, identifierEnd, TextEditor::PaletteIndex::Identifier);
-	AddToken({ LuaToken::TYPE_NAME, { _identifierStart, identifierEnd} });
+
+	const size_t strSize = identifierEnd - _identifierStart + 1;
+
+	std::string name;
+	name.reserve(strSize);
+	auto& glyphs = _lines[_line].mGlyphs;
+	for(size_t i = _identifierStart; i <= identifierEnd; ++i)
+		name.append(1, glyphs[i].mChar);
+
+	AddToken({ LuaToken::TYPE_NAME, name });
 }
 
 void LuaLexer::ConsumeNumber(char c)
@@ -1137,19 +1146,17 @@ void LuaLexer::ConsumeNumber(char c)
 		return ConsumeDotNumber(c);
 	}
 
-	// TODO identifier characters here cause: malformed number near .n{n}e[-]{n}c
-	// TODO What other characters cause this??? Can end with == ~= or newline or similar
 	if (IsBeginningOfIdentifier(c))
 	{
-		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+		// TODO all characters after the digits, until the next whitespace, should be in the message
+		MalformedNumber(_identifierStart, _col);
 		return;
 	}
 
 	const size_t end = _col - 1;
 	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
-	AddToken({ LuaToken::TYPE_NUMBER, _identifierStart, end });
+	AddToken({ LuaToken::TYPE_NUMBER });
 }
-
 
 void LuaLexer::ConsumeDotNumber(char c)
 {
@@ -1178,10 +1185,11 @@ void LuaLexer::ConsumeDotNumber(char c)
 		// Atleast one digit
 		if (!isdigit(c))
 		{
-			AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+			// TODO all characters after the 'e', until the next whitespace, should be in the message
+			MalformedNumber(_identifierStart, _col - 1);
 			return;
 		}
-			
+
 		GetNext();
 
 		// Consume all following digits
@@ -1193,17 +1201,15 @@ void LuaLexer::ConsumeDotNumber(char c)
 		}
 	}
 
-	// TODO identifier characters here cause: malformed number near .n{n}e[-]{n}c
-	// TODO What other characters cause this??? Can end with == ~= or newline or similar
 	if(IsBeginningOfIdentifier(c))
 	{
-		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col});
+		MalformedNumber(_identifierStart, _col);
 		return;
 	}
 
 	const size_t end = _col - 1;
 	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
-	AddToken({LuaToken::TYPE_NUMBER, _identifierStart, end});
+	AddToken({ LuaToken::TYPE_NUMBER });
 }
 
 void LuaLexer::ConsumeHexNumber(char c)
@@ -1214,16 +1220,28 @@ void LuaLexer::ConsumeHexNumber(char c)
 		c = PeekNext();
 	}
 
-	// TODO identifier characters here cause: malformed number near 0x{nx}
-	// TODO What other characters cause this??? Can end with == ~= or newline or similar
 	if (IsBeginningOfIdentifier(c))
 	{
-		AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, _identifierStart, _col });
+		MalformedNumber(_identifierStart, _col);
 		return;
 	}
 
 	const size_t end = _col - 1;
 	ColorRange(_identifierStart, end, TextEditor::PaletteIndex::Number);
-	AddToken({ LuaToken::TYPE_NUMBER, _identifierStart, end });
-	return;
+	AddToken({ LuaToken::TYPE_NUMBER });
+}
+
+void LuaLexer::MalformedNumber(size_t start, size_t end) const
+{
+	auto& glyphs = _lines[_line].mGlyphs;
+
+	std::string msg("malformed number near '");
+	const size_t numSize = end - start + 2 + msg.size();
+	msg.reserve(numSize + 1);
+	
+	for(size_t i = start; i <= end; ++i)
+		msg.append(1, glyphs[i].mChar);
+	msg.append(1, '\'');
+
+	AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, msg });
 }

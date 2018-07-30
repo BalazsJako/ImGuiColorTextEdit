@@ -64,21 +64,14 @@ struct LuaToken
 		TYPE_STRING,
 		TYPE_NUMBER,
 
-		TYPE_ERROR_STRAY_TILDE,
+		TYPE_EOS,
+
+		TYPE_ERROR_STRAY_TILDE, // TODO Should probably handle this in another way. Original lexer doesn't do this
+		TYPE_ERROR_INVALID_LONG_STRING_DELIMITER,
 		TYPE_ERROR_STRING,
 		TYPE_ERROR_BRACKET,
 		TYPE_ERROR_BAD_CHARACTER,
 		TYPE_ERROR_MALFORMED_NUMBER,
-	};
-
-	struct StartEnd
-	{
-		StartEnd(size_t start, size_t end)
-			: _start(start), _end(end)
-		{}
-
-		size_t _start;
-		size_t _end;
 	};
 
 	struct Level
@@ -125,15 +118,137 @@ struct LuaToken
 		: _type(type)
 	{}
 
-	LuaToken(Type type, size_t start, size_t end)
-		: _type(type), _data(StartEnd(start, end))
+	LuaToken(Type type, std::string str)
+		: _type(type), _data(std::move(str))
 	{}
 
-	LuaToken(Type type, Bracket bracket)
+	LuaToken(Type type, Bracket&& bracket)
 		: _type(type), _data(bracket)
 	{}
 
 	Type _type;
 
-	std::variant<std::monostate, StartEnd, Bracket> _data;
+	std::variant<std::monostate, std::string, Bracket> _data;
+
+	std::string ToString() const
+	{
+		switch (_type)
+		{
+		case TYPE_NAME:
+			return "";
+		case TYPE_AND:
+			return "'and'";
+		case TYPE_BREAK:
+			return "'break'";
+		case TYPE_DO:
+			return "'do'";
+		case TYPE_ELSE:
+			return "'else'";
+		case TYPE_ELSEIF:
+			return "'elseif'";
+		case TYPE_END:
+			return "'end'";
+		case TYPE_FALSE:
+			return "'false'";
+		case TYPE_FOR:
+			return "'for'";
+		case TYPE_FUNCTION:
+			return "'function'";
+		case TYPE_IF:
+			return "'if'";
+		case TYPE_IN:
+			return "'in'";
+		case TYPE_LOCAL:
+			return "'local'";
+		case TYPE_NIL:
+			return "'nil'";
+		case TYPE_NOT:
+			return "'not'";
+		case TYPE_OR:
+			return "'or'";
+		case TYPE_REPEAT:
+			return "'repeat'";
+		case TYPE_RETURN:
+			return "'return'";
+		case TYPE_THEN:
+			return "'then'";
+		case TYPE_TRUE:
+			return "'true'";
+		case TYPE_UNTIL:
+			return "'until'";
+		case TYPE_WHILE:
+			return "'while'";
+		case TYPE_PLUS:
+			return "'+'";
+		case TYPE_MINUS:
+			return "'-'";
+		case TYPE_MUL:
+			return "'*'";
+		case TYPE_DIV:
+			return "'/'";
+		case TYPE_MOD:
+			return "'%'";
+		case TYPE_EXP:
+			return "'^'";
+		case TYPE_HASH:
+			return "'#'";
+		case TYPE_EQ:
+			return "'=='";
+		case TYPE_NEQ:
+			return "'~='";
+		case TYPE_LE:
+			return "'<='";
+		case TYPE_GE:
+			return "'>='";
+		case TYPE_LT:
+			return "'<'";
+		case TYPE_GT:
+			return "'>'";
+		case TYPE_ASSIGN:
+			return "'='";
+		case TYPE_LEFT_B:
+			return "'('";
+		case TYPE_RIGHT_B:
+			return "')'";
+		case TYPE_LEFT_CB:
+			return "'{'";
+		case TYPE_RIGHT_CB:
+			return "'}'";
+		case TYPE_LEFT_SB:
+			return "'['";
+		case TYPE_RIGHT_SB:
+			return "']'";
+		case TYPE_SEMI_COLON:
+			return "';'";
+		case TYPE_COLON:
+			return "':'";
+		case TYPE_COMMA:
+			return "','";
+		case TYPE_DOT:
+			return "'.'";
+		case TYPE_CONCAT:
+			return "'..'";
+		case TYPE_VARARG:
+			return "'...'";
+		case TYPE_COMMENT:
+			return "";
+		case TYPE_EOS:
+			return "'eos'";
+			// TODO What to return on these?
+		case TYPE_BEGIN_LONG_COMMENT:
+		case TYPE_BEGIN_LONG_STRING:
+		case TYPE_END_LONG_BRACKET:
+		case TYPE_STRING:
+		case TYPE_NUMBER:
+		case TYPE_ERROR_STRAY_TILDE:
+		case TYPE_ERROR_INVALID_LONG_STRING_DELIMITER:
+		case TYPE_ERROR_STRING:
+		case TYPE_ERROR_BRACKET:
+		case TYPE_ERROR_BAD_CHARACTER:
+		case TYPE_ERROR_MALFORMED_NUMBER:
+		default:
+			return "";
+		
+		}
+	}
 };
