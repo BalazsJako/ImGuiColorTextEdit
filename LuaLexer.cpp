@@ -5,8 +5,6 @@
 
 void LuaLexer::LexAll()
 {
-	if (_lines.empty())
-		return;
 
 	_line = 0;
 	_col = 0;
@@ -35,18 +33,10 @@ void LuaLexer::LexAll()
 				ColorCurrent(TextEditor::PaletteIndex::Comment);
 				GetNext();
 				ColorCurrent(TextEditor::PaletteIndex::Comment);
-				const size_t commentStart = _col - 2;
 
-				auto [longComment, level] = ConsumeBeginLongComment(commentStart);
-
-				if(longComment)
+				if(!ConsumeLongComment())
 				{
-					if(!ConsumeLongBracket(level, TextEditor::PaletteIndex::Comment))
-						return;
-				}
-				else
-				{
-					// Point at the second '-' or at the point ConsumeBeginLongComment have placed us
+					// Point at the second '-' or at the point ConsumeLongComment might have consumed some characters
 					size_t commentEnd = _col - 1;
 
 					// Consume characters (and increment commentEnd) until end of line or end of file
@@ -54,10 +44,7 @@ void LuaLexer::LexAll()
 					{
 						c = PeekNext();
 						if (c == '\n' || c == '\0')
-						{
-							AddToken({ LuaToken::TYPE_COMMENT, commentStart , commentEnd });
 							break;
-						}
 
 						++commentEnd;
 
@@ -159,16 +146,9 @@ void LuaLexer::LexAll()
 			{
 				const size_t stringStart = _col - 1;
 
-				auto[longString, level] = ConsumeBeginLongString(stringStart);
-
-				if (longString)
+				if(!ConsumeLongString())
 				{
-					if (!ConsumeLongBracket(level, TextEditor::PaletteIndex::String))
-						return;
-				}
-				else
-				{
-					// ConsumeBeginLongString might have failed to match. Need move _col back
+					// ConsumeLongString might have failed to match. Need move _col back
 					_col = stringStart + 1;
 
 					ColorCurrent(TextEditor::PaletteIndex::Default);
@@ -225,13 +205,11 @@ void LuaLexer::LexAll()
 			break;
 		case '\'':
 			ColorCurrent(TextEditor::PaletteIndex::String);
-			if(!ConsumeString<'\''>(c))
-				return;
+			ConsumeString<'\''>(c);
 			break;
 		case '"':
 			ColorCurrent(TextEditor::PaletteIndex::String);
-			if (!ConsumeString<'"'>(c))
-				return;
+			ConsumeString<'"'>(c);
 			break;
 		default:
 
@@ -257,6 +235,8 @@ void LuaLexer::LexAll()
 
 		c = GetNext();
 	}
+
+	AddToken({LuaToken::TYPE_EOS});
 }
 
 char LuaLexer::GetNext()
@@ -332,222 +312,6 @@ void LuaLexer::AddToken(LuaToken&& token) const
 {
 	assert(_line < _lines.size());
 	_lines[_line].mTokens.emplace_back(token);
-}
-
-std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongComment(size_t pos)
-{
-	if (PeekNext() == '[')
-	{
-		GetNext();
-		ColorCurrent(TextEditor::PaletteIndex::Comment);
-
-		char c{ PeekNext() };
-		if (c == '[')
-		{
-			GetNext();
-			ColorCurrent(TextEditor::PaletteIndex::Comment);
-			AddToken({ LuaToken::TYPE_BEGIN_LONG_COMMENT, {0, pos} });
-			return { true, 0 };
-		}
-
-		if (c == '=')
-		{
-			GetNext();
-			ColorCurrent(TextEditor::PaletteIndex::Comment);
-			LuaToken::Level level {1};
-
-			bool search = true;
-			while (search)
-			{
-				c = PeekNext();
-
-				switch (c)
-				{
-				case '[':
-					GetNext();
-					ColorCurrent(TextEditor::PaletteIndex::Comment);
-					AddToken({ LuaToken::TYPE_BEGIN_LONG_COMMENT, {level, pos} });
-					return { false, level };
-				case '=':
-					GetNext();
-					ColorCurrent(TextEditor::PaletteIndex::Comment);
-					++level;
-					break;
-				default:
-					search = false;
-					break;
-				}
-			}
-		}
-	}
-
-	return { false, 0 };
-}
-
-// Returns true and level of bracket if a long bracket is detected, false and whatever otherwise
-std::tuple<bool, LuaToken::Level> LuaLexer::ConsumeBeginLongString(size_t pos)
-{
-	char c{ PeekNext() };
-	if (c == '[')
-	{
-		ColorCurrent(TextEditor::PaletteIndex::String);
-		GetNext();
-		ColorCurrent(TextEditor::PaletteIndex::String);
-		AddToken({ LuaToken::TYPE_BEGIN_LONG_STRING, {0, pos} });
-		return { true, 0 };
-	}
-
-	if (c == '=')
-	{
-		ColorCurrent(TextEditor::PaletteIndex::String);
-		GetNext();
-		LuaToken::Level level {1};
-
-		bool search = true;
-		while (search)
-		{
-			c = PeekNext();
-
-			switch (c)
-			{
-			case '[':
-				ColorCurrent(TextEditor::PaletteIndex::String);
-				GetNext();
-				ColorCurrent(TextEditor::PaletteIndex::String);
-				AddToken({ LuaToken::TYPE_BEGIN_LONG_STRING, {level, pos} });
-				return { true, level };
-			case '=':
-				ColorCurrent(TextEditor::PaletteIndex::String);
-				GetNext();
-				++level;
-				break;
-			default:
-				// We have consumed '=' characters, but this wans't a long string. Caller need to move _col back
-				search = false;
-				break;
-			}
-		}
-	}
-
-	return { false, 0 };
-}
-
-bool LuaLexer::ConsumeLongBracket(LuaToken::Level level, TextEditor::PaletteIndex color)
-{
-	if(level == 0)
-	{
-		char c{ PeekNext() };
-
-		bool search = true;
-		while (search)
-		{
-			switch (c)
-			{
-			case ']':
-				GetNext();
-				ColorCurrent(color);
-
-				c = PeekNext();
-				switch (c)
-				{
-				case ']':
-					AddToken({ LuaToken::TYPE_END_LONG_BRACKET, LuaToken::Bracket(level, _col) });
-					GetNext();
-					ColorCurrent(color);
-					return true;
-				case '\0':
-					search = false;
-					break;
-				default:
-					GetNext();
-					ColorCurrent(color);
-					c = PeekNext();
-					break;
-				}
-				break;
-			case '\0':
-				search = false;
-				break;
-			default:
-				GetNext();
-				ColorCurrent(color);
-				c = PeekNext();
-				break;
-			}
-		}
-	}
-	else
-	{
-		char c{ PeekNext() };
-
-		bool searchBracket = true;
-		while (searchBracket)
-		{
-			LuaToken::Level currentLevel = 0;
-
-			switch (c)
-			{
-			case ']':
-				{
-					GetNext();
-					ColorCurrent(color);
-					c = PeekNext();
-
-					bool searchEquals = true;
-					while (searchEquals)
-					{
-						switch (c)
-						{
-						case ']':
-							if (level == currentLevel)
-							{
-								AddToken({ LuaToken::TYPE_END_LONG_BRACKET, LuaToken::Bracket(level, _col) });
-								GetNext();
-								ColorCurrent(color);
-								return true;
-							}
-
-							GetNext();
-							ColorCurrent(color);
-							searchEquals = false;
-							break;
-						case '=':
-							GetNext();
-							ColorCurrent(color);
-							c = PeekNext();
-							++currentLevel;
-							if (currentLevel > level)
-							{
-								searchEquals = false;
-							}
-							break;
-						case '\0':
-							searchEquals = searchBracket = false;
-							break;
-						default:
-							GetNext();
-							ColorCurrent(color);
-							c = PeekNext();
-							searchEquals = false;
-							break;
-						}
-					}
-				}
-				break;
-			case '\0':
-				searchBracket = false;
-				break;
-			default:
-				GetNext();
-				ColorCurrent(color);
-				c = PeekNext();
-				break;
-			}
-		}
-	}
-
-	AddToken({LuaToken::TYPE_ERROR_BRACKET});
-	return false;
 }
 
 void LuaLexer::ConsumeIdentifier(char c)
@@ -1244,4 +1008,232 @@ void LuaLexer::MalformedNumber(size_t start, size_t end) const
 	msg.append(1, '\'');
 
 	AddToken({ LuaToken::TYPE_ERROR_MALFORMED_NUMBER, msg });
+}
+
+bool LuaLexer::ConsumeLongComment()
+{
+	char c{ PeekNext() };
+
+	if (c != '[')
+		return false;
+	GetNext();
+	ColorCurrent(TextEditor::PaletteIndex::Comment);
+
+	size_t targetLevel = 0;
+
+	c = PeekNext();
+	while (c == '=')
+	{
+		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::Comment);
+		++targetLevel;
+		c = PeekNext();
+	}
+
+	if (c != '[')
+		return false;
+	GetNext();
+	ColorCurrent(TextEditor::PaletteIndex::Comment);
+
+	c = PeekNext();
+
+	size_t firstLine = _line;
+	size_t commentStart = _col;
+	size_t curLineStartCol = _col;
+
+	// Ignore first newline
+	if (c == '\n')
+	{
+		GetNext();
+		c = PeekNext();
+		++firstLine;
+		commentStart = 0;
+		curLineStartCol = 0;
+	}
+
+	bool firstBracketFound = false;
+	size_t level = 0;
+	size_t numChars = 0;
+
+	bool search = true;
+	while (search)
+	{
+		switch (c)
+		{
+		case ']':
+			if (firstBracketFound)
+			{
+				if (level == targetLevel)
+				{
+					const size_t charsOnThisLine = _col - curLineStartCol - level - 1;
+					numChars += charsOnThisLine;
+					search = false;
+				}
+				else
+					level = 0;
+			}
+			else
+				firstBracketFound = true;
+			break;
+		case '=':
+			if (firstBracketFound)
+				++level;
+			break;
+		case '\0':
+			AddToken(LuaToken::TYPE_ERROR_UNFINISHED_LONG_COMMENT);
+			return true;
+		case '\n':
+			numChars += _lines[_line].mGlyphs.size() - curLineStartCol + 1;
+			curLineStartCol = 0;
+			// Intentional fall through
+		default:
+			firstBracketFound = false;
+			level = 0;
+			break;
+		}
+
+		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::Comment);
+		c = PeekNext();
+	}
+
+	std::string comment;
+	comment.reserve(numChars);
+
+	const size_t numLines = _line - firstLine + 1;
+	if (numLines == 1)
+	{
+		const size_t lastChar = commentStart + numChars - 1;
+		auto& first = _lines[firstLine].mGlyphs;
+		for (auto i = commentStart; i <= lastChar; ++i)
+			comment.append(1, first[i].mChar);
+	}
+	else
+	{
+		auto& first = _lines[firstLine].mGlyphs;
+		for (auto i = commentStart; i < first.size(); ++i)
+			comment.append(1, first[i].mChar);
+
+		for (size_t i = 1; i < numLines - 1; ++i)
+		{
+			comment.append(1, '\n');
+
+			auto& line = _lines[firstLine + i].mGlyphs;
+			for (auto& j : line)
+				comment.append(1, j.mChar);
+		}
+
+		comment.append(1, '\n');
+
+		const size_t charsOnLastLine = _col - curLineStartCol - level - 2;
+		auto& line = _lines[firstLine + numLines - 1].mGlyphs;
+		for (size_t i = 0; i < charsOnLastLine; ++i)
+			comment.append(1, line[i].mChar);
+	}
+
+	return true;
+}
+
+bool LuaLexer::ConsumeLongString()
+{
+	ColorCurrent(TextEditor::PaletteIndex::String);
+	char c{ PeekNext() };
+
+	size_t targetLevel = 0;
+
+	c = PeekNext();
+	while (c == '=')
+	{
+		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::String);
+		++targetLevel;
+		c = PeekNext();
+	}
+
+	if (c != '[')
+	{
+		if (targetLevel == 0)
+			return false;
+
+		std::string msg{ "invalid long string delimiter near '[" };
+		msg.reserve(msg.size() + targetLevel + 1);
+		msg.append(targetLevel, '=').append("'");
+
+		AddToken({ LuaToken::TYPE_ERROR_INVALID_LONG_STRING_DELIMITER, msg });
+		return true;
+	}
+
+	GetNext();
+	ColorCurrent(TextEditor::PaletteIndex::String);
+
+	size_t line = _line;
+
+	c = PeekNext();
+
+	// Ignore first newline
+	if (c == '\n')
+	{
+		GetNext();
+		c = PeekNext();
+	}
+
+	bool firstBracketFound = false;
+	size_t level = 0;
+
+	bool search = true;
+	while (search)
+	{
+		switch (c)
+		{
+		case ']':
+			if (firstBracketFound)
+			{
+				if (level == targetLevel)
+				{
+					search = false;
+				}
+				else
+					level = 0;
+			}
+			else
+				firstBracketFound = true;
+			break;
+		case '=':
+			if (firstBracketFound)
+				++level;
+			break;
+		case '\0':
+			AddToken(LuaToken::TYPE_ERROR_UNFINISHED_LONG_STRING);
+			return true;
+		default:
+			firstBracketFound = false;
+			level = 0;
+			break;
+		}
+
+		GetNext();
+		ColorCurrent(TextEditor::PaletteIndex::String);
+		c = PeekNext();
+	}
+
+	// TODO Add long string to the first line
+
+	_lines[line].mTokens.emplace_back(LuaToken::TYPE_STRING);
+	return true;
+}
+
+void LuaLexer::UnfinishedString(size_t start) const
+{
+	auto& glyphs = _lines[_line].mGlyphs;
+
+	const size_t end = glyphs.size();
+	std::string msg("unfinished string near '");
+	const size_t size = end - start + 1 + msg.size();
+	msg.reserve(size);
+	
+	for (size_t i = start; i < end; ++i)
+		msg.append(1, glyphs[i].mChar);
+	msg.append(1, '\'');
+
+	AddToken( { LuaToken::TYPE_ERROR_STRING, msg } );
 }

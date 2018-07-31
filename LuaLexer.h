@@ -28,68 +28,48 @@ private:
 	void AddToken(LuaToken&& token) const;
 
 	template<char Delimiter>
-	bool ConsumeString(char c)
+	void ConsumeString(char c)
 	{
-		const size_t stringStart = _col + 1;
+		const size_t stringStart = _col - 1;
 		bool ignoreNext = false;
 
 		bool searchString = true;
 		while (searchString)
 		{
-			c = GetNext();
+			c = PeekNext();
 			ColorCurrent(TextEditor::PaletteIndex::String);
 
 			switch (c)
 			{
 			case '\n':
 			case '\0':
-				AddToken(LuaToken::TYPE_ERROR_STRING);
-				return false;
+				UnfinishedString(stringStart);
+				return;
 			case '\\':
+				GetNext();
 				ignoreNext = !ignoreNext;
 				break;
 			case Delimiter:
+				GetNext();
+				ColorCurrent(TextEditor::PaletteIndex::String);
 				if (ignoreNext)
-				{
 					ignoreNext = false;
-				}
 				else
-				{
 					searchString = false;
-				}
 				break;
 			default:
+				GetNext();
 				if (ignoreNext)
 				{
 					ignoreNext = false;
 					// TODO Verify escape sequence
 				}
-				else
-				{
-					// TODO Something? Probably not
-				}
 				break;
-			}
-
-			if (c == '\n' || c == '\0')
-			{
-				searchString = false;
 			}
 		}
 
-		const size_t stringEnd = _col - 1;
-
-		AddToken({ LuaToken::TYPE_STRING});
-		return true;
+		AddToken({ LuaToken::TYPE_STRING });
 	}
-
-	// Returns true and level of bracket if a long bracket is detected, false and whatever otherwise
-	std::tuple<bool, LuaToken::Level> ConsumeBeginLongComment(size_t pos);
-	
-	// Returns true and level of bracket if a long bracket is detected, false and whatever otherwise
-	std::tuple<bool, LuaToken::Level> ConsumeBeginLongString(size_t pos);
-	
-	bool ConsumeLongBracket(LuaToken::Level level, TextEditor::PaletteIndex color);
 
 	void ConsumeIdentifier(char c);
 	void ConsumeAnd();
@@ -116,6 +96,11 @@ private:
 	void ConsumeHexNumber(char c);
 
 	void MalformedNumber(size_t start, size_t end) const;
+
+	bool ConsumeLongComment();
+	bool ConsumeLongString();
+
+	void UnfinishedString(size_t start) const;
 
 	static bool IsBeginningOfIdentifier(char c)
 	{

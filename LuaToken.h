@@ -57,61 +57,18 @@ struct LuaToken
 		TYPE_CONCAT,
 		TYPE_VARARG,
 
-		TYPE_COMMENT,
-		TYPE_BEGIN_LONG_COMMENT,
-		TYPE_BEGIN_LONG_STRING,
-		TYPE_END_LONG_BRACKET,
 		TYPE_STRING,
 		TYPE_NUMBER,
 
 		TYPE_EOS,
 
 		TYPE_ERROR_STRAY_TILDE, // TODO Should probably handle this in another way. Original lexer doesn't do this
+		TYPE_ERROR_UNFINISHED_LONG_COMMENT,
+		TYPE_ERROR_UNFINISHED_LONG_STRING,
 		TYPE_ERROR_INVALID_LONG_STRING_DELIMITER,
 		TYPE_ERROR_STRING,
-		TYPE_ERROR_BRACKET,
 		TYPE_ERROR_BAD_CHARACTER,
 		TYPE_ERROR_MALFORMED_NUMBER,
-	};
-
-	struct Level
-	{
-		Level(size_t level)
-			: _level(level)
-		{}
-
-		Level& operator++()
-		{
-			++_level;
-			return *this;
-		}
-
-		bool operator==(const Level& other) const
-		{
-			return _level == other._level;
-		}
-
-		bool operator!=(const Level& other) const
-		{
-			return _level != other._level;
-		}
-
-		bool operator>(const Level& other) const
-		{
-			return _level > other._level;
-		}
-
-		size_t _level;
-	};
-
-	struct Bracket
-	{
-		Bracket(Level level, size_t pos)
-			: _level(level), _pos(pos)
-		{}
-
-		Level _level;
-		size_t _pos;
 	};
 
 	LuaToken(Type type)
@@ -122,13 +79,9 @@ struct LuaToken
 		: _type(type), _data(std::move(str))
 	{}
 
-	LuaToken(Type type, Bracket&& bracket)
-		: _type(type), _data(bracket)
-	{}
-
 	Type _type;
 
-	std::variant<std::monostate, std::string, Bracket> _data;
+	std::variant<std::monostate, std::string> _data;
 
 	std::string ToString() const
 	{
@@ -230,25 +183,20 @@ struct LuaToken
 			return "'..'";
 		case TYPE_VARARG:
 			return "'...'";
-		case TYPE_COMMENT:
-			return "";
 		case TYPE_EOS:
 			return "'eos'";
 			// TODO What to return on these?
-		case TYPE_BEGIN_LONG_COMMENT:
-		case TYPE_BEGIN_LONG_STRING:
-		case TYPE_END_LONG_BRACKET:
 		case TYPE_STRING:
 		case TYPE_NUMBER:
 		case TYPE_ERROR_STRAY_TILDE:
+		case TYPE_ERROR_UNFINISHED_LONG_COMMENT:
+		case TYPE_ERROR_UNFINISHED_LONG_STRING:
 		case TYPE_ERROR_INVALID_LONG_STRING_DELIMITER:
 		case TYPE_ERROR_STRING:
-		case TYPE_ERROR_BRACKET:
 		case TYPE_ERROR_BAD_CHARACTER:
 		case TYPE_ERROR_MALFORMED_NUMBER:
 		default:
 			return "";
-		
 		}
 	}
 };
