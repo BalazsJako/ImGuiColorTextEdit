@@ -173,8 +173,7 @@ void LuaLexer::LexAll()
 			ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 			break;
 		case '.':
-			c = PeekNext();
-			if (c == '.')
+			if (PeekNext() == '.')
 			{
 				ColorCurrent(TextEditor::PaletteIndex::Punctuation);
 				GetNext();
