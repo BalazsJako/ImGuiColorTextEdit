@@ -7,6 +7,8 @@
 #include "TextEditor.h"
 #include "LuaLexer.h"
 #include "imgui_internal.h"
+#include "LuaParser.h"
+#include <iostream>
 
 static const int cTextStart = 7;
 
@@ -50,8 +52,6 @@ TextEditor::TextEditor()
 {
 	SetPalette(GetDarkPalette());
 	mLines.push_back(Line());
-
-	//mLexer = new LuaLexer(mLines);
 }
 
 
@@ -533,12 +533,30 @@ void TextEditor::LexAll()
 	LuaLexer(mLines).LexAll();
 }
 
+void TextEditor::ParseAll()
+{
+	// TODO Clear all variable inspection stuff
+
+	LuaParser parser(mLines, this);
+	
+	if(!parser.ParseAll())
+	{
+		// TODO Present error in better way
+		auto [msg, line] = parser.GetError();
+		std::cout << "[" << line + 1 << "] " << msg << "\n";
+	}
+}
+
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
 
 	if(mTextChanged)
+	{
 		LexAll();
+		ParseAll();
+	}
+		
 
 	mTextChanged = false;
 
@@ -1772,6 +1790,12 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 	return p;
 }
 
+void TextEditor::AddVariable(const LuaVariable& variable)
+{
+	// TODO Add the variables to the text, color the text based on variable type
+
+	// TODO Add smarter variable inspection based on program counter
+}
 
 std::string TextEditor::GetText() const
 {

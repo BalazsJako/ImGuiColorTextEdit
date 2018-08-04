@@ -71,6 +71,17 @@ struct LuaToken
 		TYPE_ERROR_MALFORMED_NUMBER,
 	};
 
+	struct NameData
+	{
+		NameData(std::string name, size_t startCol, size_t endCol)
+			: _name(std::move(name)), _startCol(startCol), _endCol(endCol)
+		{}
+
+		std::string _name;
+		size_t _startCol;
+		size_t _endCol;
+	};
+
 	LuaToken(Type type)
 		: _type(type)
 	{}
@@ -79,13 +90,17 @@ struct LuaToken
 		: _type(type), _data(std::move(str))
 	{}
 
+	LuaToken(Type type, NameData name)
+		: _type(type), _data(std::move(name))
+	{}
+
 	Type _type;
 
-	std::variant<std::monostate, std::string> _data;
+	std::variant<std::monostate, std::string, NameData> _data;
 
-	std::string ToString() const
+	static std::string ToString(Type type)
 	{
-		switch (_type)
+		switch (type)
 		{
 		case TYPE_NAME:
 			return "";

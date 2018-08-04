@@ -11,6 +11,7 @@
 #include "imgui.h"
 #include <functional>
 #include "LuaToken.h"
+#include "LuaVariable.h"
 
 class TextEditor
 {
@@ -237,6 +238,8 @@ public:
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
 
+	void AddVariable(const LuaVariable& variable);
+
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
@@ -317,8 +320,7 @@ private:
 	ImVec2 MouseDistanceOutsideTextArea() const;
 
 	void LexAll();
-
-	
+	void ParseAll();
 
 	float mLineSpacing;
 	Lines mLines;

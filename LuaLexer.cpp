@@ -51,6 +51,8 @@ void LuaLexer::LexAll()
 						GetNext();
 						ColorCurrent(TextEditor::PaletteIndex::Comment);
 					} while (true);
+
+					// TODO Add comment as a token. Can be consumed separetely by the parser, to give documentation to functions
 				}
 			}
 			else
@@ -881,7 +883,7 @@ void LuaLexer::ConsumeName(char c)
 	for(size_t i = _identifierStart; i <= identifierEnd; ++i)
 		name.append(1, glyphs[i].mChar);
 
-	AddToken({ LuaToken::TYPE_NAME, name });
+	AddToken({ LuaToken::TYPE_NAME, LuaToken::NameData{name, _identifierStart, identifierEnd } });
 }
 
 void LuaLexer::ConsumeNumber(char c)
@@ -1130,6 +1132,7 @@ bool LuaLexer::ConsumeLongComment()
 			comment.append(1, line[i].mChar);
 	}
 
+	// TODO Add comment as a token. Can be consumed separetely by the parser, to give documentation to functions
 	return true;
 }
 
@@ -1214,8 +1217,6 @@ bool LuaLexer::ConsumeLongString()
 		ColorCurrent(TextEditor::PaletteIndex::String);
 		c = PeekNext();
 	}
-
-	// TODO Add long string to the first line
 
 	_lines[line].mTokens.emplace_back(LuaToken::TYPE_STRING);
 	return true;
