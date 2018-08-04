@@ -27,7 +27,7 @@ class LuaFunctionState
 
 public:
 	LuaFunctionState(size_t lineDefined, LuaFunctionState* prevFunc = nullptr)
-		: _lineDefined(lineDefined), _prevFunc(prevFunc)
+		: _lineDefined(lineDefined), _prevFunc(prevFunc), _isVararg(false)
 	{}
 
 	void SetVararg()

@@ -599,7 +599,7 @@ void LuaParser::ForList()
 {
 	/* forlist -> NAME {,NAME} IN explist1 forbody */
 
-	while (TestNext(LuaToken::TYPE_COLON))
+	while (TestNext(LuaToken::TYPE_COMMA))
 	{
 		Check(LuaToken::TYPE_NAME);
 		auto& data = std::get<LuaToken::NameData>(_currentToken->_data);
