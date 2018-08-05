@@ -241,7 +241,8 @@ bool LuaParser::FuncName()
 
 	bool needself = false;
 	Check(LuaToken::TYPE_NAME);
-	// TODO Function name is a varaible too? Might be local?
+	auto& data = std::get<LuaToken::NameData>(_currentToken->_data);
+	_currentFunctionState->Variable(data._name, { _line, data._startCol, data._endCol });
 	NextToken();
 	while (_currentToken->_type == '.')
 		Field();
