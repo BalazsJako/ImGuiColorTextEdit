@@ -195,9 +195,9 @@ void LuaParser::EnterBlock(bool breakable)
 	_currentFunctionState->OpenBlock(breakable);
 }
 
-void LuaParser::LeaveBlock()
+void LuaParser::LeaveBlock(size_t lastLineDefined)
 {
-	_currentFunctionState->CloseBlock(_line);
+	_currentFunctionState->CloseBlock(lastLineDefined);
 }
 
 void LuaParser::OpenFunction(size_t lineDefined)
@@ -439,7 +439,7 @@ void LuaParser::WhileStat(size_t line)
 	CheckNext(LuaToken::TYPE_DO);
 	Block();
 	CheckMatch(LuaToken::TYPE_END, LuaToken::TYPE_WHILE, line);
-	LeaveBlock();
+	LeaveBlock(_line);
 }
 
 void LuaParser::ForStat(size_t line)
@@ -467,8 +467,10 @@ void LuaParser::ForStat(size_t line)
 	default:
 		SyntaxError("'=' or 'in' expected");
 	}
+	// Intercept last line here before consuming end
+	const size_t lastLineDefined = _line;
 	CheckMatch(LuaToken::TYPE_END, LuaToken::TYPE_FOR, line);
-	LeaveBlock();  /* loop scope (`break' jumps to this point) */
+	LeaveBlock(lastLineDefined);  /* loop scope (`break' jumps to this point) */
 }
 
 void LuaParser::RepeatStat(size_t line)
@@ -483,8 +485,8 @@ void LuaParser::RepeatStat(size_t line)
 
 	Cond();  /* read condition (inside scope block) */
 
-	LeaveBlock();  /* finish scope */
-	LeaveBlock();  /* finish loop */
+	LeaveBlock(_line);  /* finish scope */
+	LeaveBlock(_line);  /* finish loop */
 }
 
 void LuaParser::FuncStat(size_t line)
@@ -577,7 +579,7 @@ void LuaParser::ForBody()
 	CheckNext(LuaToken::TYPE_DO);
 	EnterBlock(false);  /* scope for declared variables */
 	Block();
-	LeaveBlock();  /* end of scope for declared variables */
+	LeaveBlock(_line);  /* end of scope for declared variables */
 }
 
 void LuaParser::ForNum(size_t line)

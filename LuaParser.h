@@ -60,7 +60,7 @@ private:
 	void Block();
 
 	void EnterBlock(bool breakable = false);
-	void LeaveBlock();
+	void LeaveBlock(size_t lastLineDefined);
 
 	void OpenFunction(size_t lineDefined);
 	void CloseFunction(size_t lastLineDefined);
