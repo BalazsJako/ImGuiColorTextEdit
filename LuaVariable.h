@@ -27,7 +27,7 @@ struct LuaLocal
 
 	std::string _name;
 	LuaVariableLocation _location;
-	size_t _count;
+	size_t _count; // The number of locals with the same name preceding this one
 	size_t _lineDefined;
 	size_t _lastLineDefined;
 };

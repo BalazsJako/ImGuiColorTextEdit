@@ -13,6 +13,8 @@ class LuaFunctionState
 	bool _isVararg;
 
 	// All local declarations in the functions scope
+	std::vector<LuaLocal> _localDefinitions;
+	// All locals in the functions scope
 	std::vector<LuaLocal> _locals;
 	// All usages of upvalues for this function
 	std::vector<LuaUpvalue> _upvalues;
@@ -83,12 +85,13 @@ public:
 	void AddLocal(const std::string& name, const LuaVariableLocation& loc)
 	{
 		// TODO Verify std function
-		auto count = std::count_if(_locals.begin(), _locals.end(),
+		auto count = std::count_if(_localDefinitions.begin(), _localDefinitions.end(),
 			[name](LuaLocal& local) { return local._name == name; }
 		);
 
 		if(_blocks.empty())
 		{
+			_localDefinitions.emplace_back(name, loc, loc._line, count);
 			_locals.emplace_back(name, loc, loc._line, count);
 		}
 		else
@@ -98,7 +101,7 @@ public:
 				[name](size_t acc, const LuaBlock& block) { return acc + block.GetLocalCount(name); }
 			);
 
-			(*_blocks.rbegin()).AddLocal( name, loc, count);
+			(*_blocks.rbegin()).AddLocalDefinition(name, loc, count);
 		}
 	}
 
@@ -114,20 +117,22 @@ public:
 			{
 				auto local = std::get<LuaLocal>(foundLocal);
 				if (currentFunction)
-					_variables.emplace_back(LuaLocal(name, loc, local._lineDefined, local._count));
+				{
+					_blocks.rbegin()->AddLocal(LuaLocal(name, loc, local._lineDefined, local._count));
+				}
 
 				return local;
 			}
 		}
 
 		// Check if local in function scope
-		const auto foundLocal = std::find_if(_locals.rbegin(), _locals.rend(),
+		const auto foundLocal = std::find_if(_localDefinitions.rbegin(), _localDefinitions.rend(),
 			[name](const LuaLocal& local) { return local._name == name; }
 		);
-		if (foundLocal != _locals.rend())
+		if (foundLocal != _localDefinitions.rend())
 		{
 			if (currentFunction)
-				_variables.emplace_back(LuaLocal(name, loc, foundLocal->_lineDefined, foundLocal->_count));
+				_locals.emplace_back(LuaLocal(name, loc, foundLocal->_lineDefined, foundLocal->_count));
 			return *foundLocal;
 		}
 
