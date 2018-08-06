@@ -535,7 +535,7 @@ void TextEditor::LexAll()
 
 void TextEditor::ParseAll()
 {
-	// TODO Clear all variable inspection stuff
+	mVariables.clear();
 
 	LuaParser parser(mLines, this);
 	
@@ -970,6 +970,45 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			textScreenPos.x = lineStartScreenPos.x + mCharAdvance.x * cTextStart;
 			textScreenPos.y = lineStartScreenPos.y;
 			++lineNo;
+		}
+
+		const auto wordPos = FindWordStart(ScreenPosToCoordinates(ImGui::GetMousePos()));
+		//std::cout << wordPos.mLine << ", " << wordPos.mColumn << "\n";
+		const auto found = std::find_if(mVariables.begin(), mVariables.end(),
+			[wordPos](const std::pair<Coordinates, LuaVariable>& var) { return var.first.mLine == wordPos.mLine &&  var.first.mColumn == wordPos.mColumn; }
+		);
+		if (found != mVariables.end())
+		{
+			std::string text;
+			bool valid = false;
+
+			if (std::holds_alternative<LuaGlobal>(found->second))
+			{
+				auto& global = std::get<LuaGlobal>(found->second);
+				text = "global: " + global._name;
+				valid = true;
+			}
+			else if (std::holds_alternative<LuaLocal>(found->second))
+			{
+				auto& local = std::get<LuaLocal>(found->second);
+				text = "local: " + local._name + " [" + std::to_string(local._lineDefined + 1) + ", " +
+					std::to_string(local._lastLineDefined + 1) + "][" + std::to_string(local._count) + "]\n";
+				valid = true; // TODO For now
+			}
+			else
+			{
+				auto& upvalue = std::get<LuaUpvalue>(found->second);
+				text = "upvalue: " + upvalue._name + " [" + std::to_string(upvalue._lineDefined + 1) + ", " +
+					std::to_string(upvalue._lastLineDefined + 1) + "]\n";
+				valid = true; // TODO For now
+			}
+
+			if(valid)
+			{
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted(text.c_str());
+				ImGui::EndTooltip();
+			}
 		}
 
 		auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -1719,6 +1758,11 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 		0xffaaaaaa, // Identifier
 		0xff9bc64d, // Known identifier
 		0xffc040a0, // Preproc identifier
+
+		0xff0000ff, // GlobalValue,
+		0xff00ff00, // LocalValue,
+		0xffff0000, // UpValue,
+
 		0xff206020, // Comment (single line)
 		0xff406020, // Comment (multi line)
 		0xff101010, // Background
@@ -1747,6 +1791,11 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 		0xff404040, // Identifier
 		0xff606010, // Known identifier
 		0xffc040a0, // Preproc identifier
+
+		0xff0000ff, // GlobalValue,
+		0xff00ff00, // LocalValue,
+		0xffff0000, // UpValue,
+
 		0xff205020, // Comment (single line)
 		0xff405020, // Comment (multi line)
 		0xffffffff, // Background
@@ -1775,6 +1824,11 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 		0xff00ffff, // Identifier
 		0xffffffff, // Known identifier
 		0xffff00ff, // Preproc identifier
+
+		0xff0000ff, // GlobalValue,
+		0xff00ff00, // LocalValue,
+		0xffff0000, // UpValue,
+
 		0xff808080, // Comment (single line)
 		0xff404040, // Comment (multi line)
 		0xff800000, // Background
@@ -1792,9 +1846,36 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 
 void TextEditor::AddVariable(const LuaVariable& variable)
 {
-	// TODO Add the variables to the text, color the text based on variable type
+	LuaVariableLocation loc{0,0,0};
+	PaletteIndex paletteIndex;
 
-	// TODO Add smarter variable inspection based on program counter
+	if(std::holds_alternative<LuaGlobal>(variable))
+	{
+		auto& global = std::get<LuaGlobal>(variable);
+		loc = global._location;
+		paletteIndex = PaletteIndex::GlobalValue;
+	}
+	else if (std::holds_alternative<LuaLocal>(variable))
+	{
+		auto& local = std::get<LuaLocal>(variable);
+		loc = local._location;
+		paletteIndex = PaletteIndex::LocalValue;
+	}
+	else
+	{
+		auto& upvalue = std::get<LuaUpvalue>(variable);
+		loc = upvalue._location;
+		paletteIndex = PaletteIndex::UpValue;
+	}
+
+	auto& glyphs = mLines[loc._line].mGlyphs;
+	for (size_t i = loc._startCol; i <= loc._endCol; ++i)
+	{
+		glyphs[i].mColorIndex = paletteIndex;
+	}
+
+	auto pair = std::make_pair(Coordinates(loc._line, loc._startCol), variable);
+	mVariables.insert(pair);
 }
 
 std::string TextEditor::GetText() const

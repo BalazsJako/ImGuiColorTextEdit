@@ -28,6 +28,9 @@ public:
 		Identifier,
 		KnownIdentifier,
 		PreprocIdentifier,
+		GlobalValue,
+		LocalValue,
+		UpValue,
 		Comment,
 		MultiLineComment,
 		Background,
@@ -113,6 +116,14 @@ public:
 				return mLine > o.mLine;
 			return mColumn >= o.mColumn;
 		}
+
+		struct Hash {
+			std::size_t operator ()(Coordinates const& p) const
+			{
+				using std::hash;
+				return hash<int>()(p.mLine) ^ hash<int>()(p.mColumn);
+			}
+		};
 	};
 
 	struct Identifier
@@ -124,6 +135,7 @@ public:
 	typedef std::string String;
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
+	typedef std::unordered_map<Coordinates, LuaVariable, Coordinates::Hash> Variables;
 	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
@@ -353,5 +365,7 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
+
+	Variables mVariables;
 };
 
