@@ -46,9 +46,12 @@ TextEditor::TextEditor()
 	, mSelectionMode(SelectionMode::Normal)
 	, mTextAreaHeld(false)
 	//, mCheckMultilineComments(true)
-	, mCurrentStatement(-1)
+	, mCurrentStatement(0)
 	, mBreakpointsModified(false)
 	, mBreakpointsModifiedCallback(nullptr)
+	, mGetGlobalValueCallback(nullptr)
+	, mGetLocalValueCallback(nullptr)
+	, mGetUpValueCallback(nullptr)
 {
 	SetPalette(GetDarkPalette());
 	mLines.push_back(Line());
@@ -78,7 +81,7 @@ void TextEditor::SetStatementMarker(int line)
 {
 	mCurrentStatement = line;
 
-	if(mCurrentStatement != -1)
+	if(mCurrentStatement != NoStatement)
 	{
 		EnsureLineVisible(line);
 	}
@@ -870,7 +873,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			}
 
 			// Draw statement marker
-			if(mCurrentStatement - 1 == lineNo)
+			if(mCurrentStatement != NoStatement && mCurrentStatement - 1 == lineNo)
 			{
 				const float breakpointRadius = mCharAdvance.y / 2 - 2;
 				const float triangleRadius = breakpointRadius - 1;
@@ -984,29 +987,58 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			if (std::holds_alternative<LuaGlobal>(found->second))
 			{
-				auto& global = std::get<LuaGlobal>(found->second);
-				text = "global: " + global._name;
-				valid = true;
+				if(mGetGlobalValueCallback != nullptr)
+				{
+					auto& global = std::get<LuaGlobal>(found->second);
+					text = mGetGlobalValueCallback(global._name);
+					valid = true;
+				}
 			}
 			else if (std::holds_alternative<LuaLocal>(found->second))
 			{
+				if (mGetLocalValueCallback != nullptr)
+				{
+					auto& local = std::get<LuaLocal>(found->second);
+					if (local.InScope(static_cast<size_t>(mCurrentStatement)))
+					{
+						text = mGetLocalValueCallback(local._name, local._count);
+						valid = !text.empty();
+					}
+				}
+
+				// Debugging
 				auto& local = std::get<LuaLocal>(found->second);
-				text = "local: " + local._name + " [" + std::to_string(local._lineDefined + 1) + ", " +
-					std::to_string(local._lastLineDefined + 1) + "][" + std::to_string(local._count) + "]\n";
-				valid = true; // TODO For now
+				text.append(" [" + std::to_string(local._lineDefined + 1) + ", " +
+					std::to_string(local._lastLineDefined + 1) + "]");
 			}
 			else
 			{
+				if (mGetUpValueCallback != nullptr)
+				{
+					auto& upvalue = std::get<LuaUpvalue>(found->second);
+					if (upvalue.InScope(static_cast<size_t>(mCurrentStatement)))
+					{
+						text = mGetUpValueCallback(upvalue._name);
+						valid = !text.empty();
+					}
+				}
+
+				// Debugging
 				auto& upvalue = std::get<LuaUpvalue>(found->second);
-				text = "upvalue: " + upvalue._name + " [" + std::to_string(upvalue._lineDefined + 1) + ", " +
-					std::to_string(upvalue._lastLineDefined + 1) + "]\n";
-				valid = true; // TODO For now
+				text.append(" [" + std::to_string(upvalue._lineDefined + 1) + ", " +
+					std::to_string(upvalue._lastLineDefined + 1) + "]");
 			}
 
 			if(valid)
 			{
 				ImGui::BeginTooltip();
 				ImGui::TextUnformatted(text.c_str());
+				ImGui::EndTooltip();
+			}
+			else
+			{
+				ImGui::BeginTooltip();
+				ImGui::TextUnformatted("Not available");
 				ImGui::EndTooltip();
 			}
 		}

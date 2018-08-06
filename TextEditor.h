@@ -140,6 +140,8 @@ public:
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
+
+	static const int NoStatement {0};
 	
 	struct Glyph
 	{
@@ -196,6 +198,9 @@ public:
 	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
 	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } 
 	void SetBreakPointsChangedCallback(std::function<void(TextEditor*)> callback) { mBreakpointsModifiedCallback = std::move(callback); }
+	void SetGetGlobalValueCallback(std::function<std::string(std::string_view)> callback) { mGetGlobalValueCallback = std::move(callback); }
+	void SetGetLocalValueCallback(std::function<std::string(std::string_view, size_t)> callback) { mGetLocalValueCallback = std::move(callback); }
+	void SetGetUpValueCallback(std::function<std::string(std::string_view)> callback) { mGetUpValueCallback = std::move(callback); }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -362,6 +367,9 @@ private:
 	Breakpoints mBreakpoints;
 	bool mBreakpointsModified;
 	std::function<void(TextEditor*)> mBreakpointsModifiedCallback;
+	std::function<std::string(std::string_view)> mGetGlobalValueCallback;
+	std::function<std::string(std::string_view, size_t)> mGetLocalValueCallback;
+	std::function<std::string(std::string_view)> mGetUpValueCallback;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;

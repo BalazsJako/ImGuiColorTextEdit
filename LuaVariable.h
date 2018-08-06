@@ -25,6 +25,11 @@ struct LuaLocal
 		_lastLineDefined = lastLineDefined;
 	}
 
+	bool InScope(size_t line) const
+	{
+		return line > _lineDefined + 1 && line <= _lastLineDefined + 1;
+	}
+
 	std::string _name;
 	LuaVariableLocation _location;
 	size_t _count; // The number of locals with the same name preceding this one
@@ -41,6 +46,11 @@ struct LuaUpvalue
 	void SetLastLineDefined(size_t lastLineDefined)
 	{
 		_lastLineDefined = lastLineDefined;
+	}
+
+	bool InScope(size_t line) const
+	{
+		return line > _lineDefined + 1 && line <= _lastLineDefined + 1;
 	}
 
 	std::string _name;
