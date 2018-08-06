@@ -9,6 +9,9 @@
 #include <map>
 #include <regex>
 #include "imgui.h"
+#include <functional>
+#include "LuaToken.h"
+#include "LuaVariable.h"
 
 class TextEditor
 {
@@ -25,6 +28,9 @@ public:
 		Identifier,
 		KnownIdentifier,
 		PreprocIdentifier,
+		GlobalValue,
+		LocalValue,
+		UpValue,
 		Comment,
 		MultiLineComment,
 		Background,
@@ -110,6 +116,14 @@ public:
 				return mLine > o.mLine;
 			return mColumn >= o.mColumn;
 		}
+
+		struct Hash {
+			std::size_t operator ()(Coordinates const& p) const
+			{
+				using std::hash;
+				return hash<int>()(p.mLine) ^ hash<int>()(p.mColumn);
+			}
+		};
 	};
 
 	struct Identifier
@@ -121,10 +135,13 @@ public:
 	typedef std::string String;
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
+	typedef std::unordered_map<Coordinates, LuaVariable, Coordinates::Hash> Variables;
 	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
 	typedef char Char;
+
+	static const int NoStatement {0};
 	
 	struct Glyph
 	{
@@ -135,10 +152,15 @@ public:
 		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
 	};
 
-	typedef std::vector<Glyph> Line;
+	struct Line
+	{
+		std::vector<Glyph> mGlyphs;
+		std::vector<LuaToken> mTokens;
+	};
+
 	typedef std::vector<Line> Lines;
 
-	struct LanguageDefinition
+	/*struct LanguageDefinition
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
@@ -160,19 +182,25 @@ public:
 		static LanguageDefinition SQL();
 		static LanguageDefinition AngelScript();
 		static LanguageDefinition Lua();
-	};
+	};*/
 
 	TextEditor();
 	~TextEditor();
 
-	void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
-	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }
+	/*void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
+	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }*/
 
 	const Palette& GetPalette() const { return mPalette; }
 	void SetPalette(const Palette& aValue);
-
+	
+	void SetStatementMarker(int line);
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
-	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers; }
+	void SetBreakpoints(const Breakpoints& aMarkers) { mBreakpoints = aMarkers ; mBreakpointsModified = true; }
+	const Breakpoints& GetBreakpoints() const { return mBreakpoints; } 
+	void SetBreakPointsChangedCallback(std::function<void(TextEditor*)> callback) { mBreakpointsModifiedCallback = std::move(callback); }
+	void SetGetGlobalValueCallback(std::function<std::string(std::string_view)> callback) { mGetGlobalValueCallback = std::move(callback); }
+	void SetGetLocalValueCallback(std::function<std::string(std::string_view, size_t)> callback) { mGetLocalValueCallback = std::move(callback); }
+	void SetGetUpValueCallback(std::function<std::string(std::string_view)> callback) { mGetUpValueCallback = std::move(callback); }
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
@@ -217,10 +245,17 @@ public:
 	bool CanRedo() const;
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
+	void MarkSaved();
+	void MarkDirty();
+	bool IsDirty() const;
+
+	void EnsureLineVisible(int line);
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
+
+	void AddVariable(const LuaVariable& variable);
 
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
@@ -268,9 +303,9 @@ private:
 	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
-	void Colorize(int aFromLine = 0, int aCount = -1);
-	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
-	void ColorizeInternal();
+	//void Colorize(int aFromLine = 0, int aCount = -1);
+	//void ColorizeRange(int aFromLine = 0, int aToLine = 0);
+	//void ColorizeInternal();
 	int TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
@@ -283,6 +318,7 @@ private:
 	int InsertTextAt(Coordinates& aWhere, const char* aValue);
 	void AddUndo(UndoRecord& aValue);
 	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
+	unsigned int ScreenPosToLineNumber(const ImVec2& aPosition) const;
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
 	bool IsOnWordBoundary(const Coordinates& aAt) const;
@@ -295,29 +331,49 @@ private:
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
 
+	bool MouseOverText() const;
+	bool MouseOverLineNumbers() const;
+	bool MouseOverBreakpoints() const;
+	ImVec2 MouseDistanceOutsideTextArea() const;
+
+	void LexAll();
+	void ParseAll();
+
 	float mLineSpacing;
 	Lines mLines;
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
-	
+	int mUndoSaveIndex;
+
 	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
+	bool mShouldScrollToLine;
+	int mScrollToLine;
 	bool mTextChanged;
-	int mColorRangeMin, mColorRangeMax;
+	//int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
+	bool mTextAreaHeld;
 
 	Palette mPalette;
-	LanguageDefinition mLanguageDefinition;
-	RegexList mRegexList;
+	/*LanguageDefinition mLanguageDefinition;*/
+	//RegexList mRegexList;
 
-	bool mCheckMultilineComments;
+	//bool mCheckMultilineComments;
+	int mCurrentStatement;
 	Breakpoints mBreakpoints;
+	bool mBreakpointsModified;
+	std::function<void(TextEditor*)> mBreakpointsModifiedCallback;
+	std::function<std::string(std::string_view)> mGetGlobalValueCallback;
+	std::function<std::string(std::string_view, size_t)> mGetLocalValueCallback;
+	std::function<std::string(std::string_view)> mGetUpValueCallback;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
+
+	Variables mVariables;
 };
 
