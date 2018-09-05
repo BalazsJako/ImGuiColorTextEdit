@@ -5,11 +5,12 @@
 #include <cmath>
 
 #include "TextEditor.h"
-#include "imgui_internal.h" // for imGui::GetCurrentWindow()
+
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "imgui.h" // for imGui::GetCurrentWindow()
 
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML
-// - handle non-monospace fonts
 // - handle unicode/utf
 // - testing
 
@@ -74,10 +75,11 @@ int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex)
 	}
 	else
 	{
-		auto num = mTabSize - aIndex % mTabSize;
-		for (int j = num; j > 0; --j)
-			aBuffer.push_back(' ');
-		return aIndex + num;
+		//auto num = mTabSize - aIndex % mTabSize;
+		//for (int j = num; j > 0; --j)
+		//	aBuffer.push_back(' ');
+		//return aIndex + num;
+		return aIndex;
 	}
 }
 
@@ -437,7 +439,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
 
 	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
-	const float fontSize = ImGui::GetCurrentWindow()->CalcFontSize();
+	const float fontSize = ImGui::CalcTextSize("#").x;
 	mCharAdvance = ImVec2(fontSize , ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);	
 
 	/*
@@ -447,8 +449,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ImGui::PushAllowKeyboardFocus(true);
 	ImGuiIO& io = ImGui::GetIO();
 	auto shift = io.KeyShift;
-	auto ctrl = io.OptMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
-	auto alt = io.OptMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
+	auto ctrl = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
+	auto alt = io.ConfigMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
 
 	if (ImGui::IsWindowFocused())
 	{
@@ -459,16 +461,13 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		io.WantCaptureKeyboard = true;
 		io.WantTextInput = true;
 
-		if (!IsReadOnly() && ImGui::IsKeyPressed('Z'))
-			if (ctrl && !shift && !alt)
-				Undo();
-		if (!IsReadOnly() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
-			if (!ctrl && !shift && alt)
-				Undo();
-		if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed('Y'))
+		if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed('Z'))
+			Undo();
+		else if (!IsReadOnly() && !ctrl && !shift && alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
+			Undo();
+		else if (!IsReadOnly() && ctrl && !shift && !alt && ImGui::IsKeyPressed('Y'))
 			Redo();
-
-		if (!ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
+		else if (!ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_UpArrow)))
 			MoveUp(1, shift);
 		else if (!ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_DownArrow)))
 			MoveDown(1, shift);
@@ -510,12 +509,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			SelectAll();
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) )
 			EnterCharacter('\n');
-
-		/*
-			Add Input Characters
-		*/
-
-		if (!IsReadOnly() && !ctrl && !alt)
+		else if (!IsReadOnly() && !ctrl && !alt)
 		{
 			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
 			{
@@ -524,8 +518,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				{
 					if (isprint(c) || isspace(c))
 					{
-						if (c == '\r')
-							c = '\n';
 						EnterCharacter((char)c);
 					}
 				}
@@ -553,7 +545,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			if (tripleClick)
 			{
-				printf("triple\n");
 				if (!ctrl)
 				{
 					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -570,7 +561,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			else if (doubleClick)
 			{
-				printf("double\n");
 				if (!ctrl)
 				{
 					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
@@ -581,7 +571,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 				}
 
-				lastClick = ImGui::GetTime();
+				lastClick = (float)ImGui::GetTime();
 			}
 
 			/*
@@ -590,7 +580,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			else if (click)
 			{
-				printf("single\n");
 				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
 				if (ctrl)
 					mSelectionMode = SelectionMode::Word;
@@ -598,13 +587,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 					mSelectionMode = SelectionMode::Normal;
 				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 
-				lastClick = ImGui::GetTime();
+				lastClick = (float)ImGui::GetTime();
 			}
-
-			/*
-				Mouse left button dragging (=> update selection)
-			*/
-
+			// Mouse left button dragging (=> update selection)
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
 				io.WantCaptureMouse = true;
@@ -619,7 +604,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	static std::string buffer;
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
-	int appendIndex = 0;
 	float longest(mTextStart);
 
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
@@ -627,15 +611,18 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	auto scrollY = ImGui::GetScrollY();
 
 	auto lineNo = (int)floor(scrollY / mCharAdvance.y);
+	auto globalLineMax = (int)mLines.size();
 	auto lineMax = std::max(0, std::min((int)mLines.size() - 1, lineNo + (int)floor((scrollY + contentSize.y) / mCharAdvance.y)));
 
 	// Deduce mTextStart by evaluating mLines size (global lineMax) plus two spaces as text width
-	std::string lineMaxAsString(std::to_string(mLines.size()-1) + "  ");
-	mTextStart = ImGui::CalcTextSize(lineMaxAsString.c_str()).x + mLeftMargin;
+	char buf[16];
+	snprintf(buf, 16, " %d ", globalLineMax);
+	mTextStart = ImGui::CalcTextSize(buf).x + mLeftMargin;
 
 	if (!mLines.empty())
 	{
-		float mSpaceSize = ImGui::CalcTextSize(" ").x;
+		auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
+		float spaceSize = ImGui::CalcTextSize(" ").x + 1.0f * fontScale;
 
 		while (lineNo <= lineMax)
 		{
@@ -652,17 +639,17 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				Draw Selected area 
 			*/
 
-			int sstart = -1;
-			int ssend = -1;
+			float sstart = -1.0f;
+			float ssend = -1.0f;
 
 			assert(mState.mSelectionStart <= mState.mSelectionEnd);
 			if (mState.mSelectionStart <= lineEndCoord)
-				sstart = mState.mSelectionStart > lineStartCoord ? TextDistanceToLineStart(mState.mSelectionStart) : 0;
+				sstart = mState.mSelectionStart > lineStartCoord ? TextDistanceToLineStart(mState.mSelectionStart) : 0.0f;
 			if (mState.mSelectionEnd > lineStartCoord)
 				ssend = TextDistanceToLineStart(mState.mSelectionEnd < lineEndCoord ? mState.mSelectionEnd : lineEndCoord);
 
 			if (mState.mSelectionEnd.mLine > lineNo)
-				++ssend;
+				ssend += mCharAdvance.x;
 
 			if (sstart != -1 && ssend != -1 && sstart < ssend)
 			{
@@ -675,7 +662,6 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				Draw break point
 			*/
 
-			static char buf[16];
 			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 
 			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
@@ -711,9 +697,10 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			/*
 				Draw line number (right aligned)
 			*/
-			std::string lineAsString(std::to_string(lineNo));
-			auto lineAsStringWidth = ImGui::CalcTextSize(lineAsString.c_str()).x;
-			drawList->AddText(ImVec2(mTextStart - lineAsStringWidth, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], lineAsString.c_str());
+
+			auto chars = snprintf(buf, 16, "%d  ", lineNo + 1);
+			auto lineNoWidth = ImGui::CalcTextSize(buf).x;
+			drawList->AddText(ImVec2(lineStartScreenPos.x + mTextStart - lineNoWidth, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
 			/*
 				Highlight the current line (where the cursor is).
@@ -753,8 +740,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				Draw Text
 			*/
 
-			appendIndex = 0;
-			auto prevColor           = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
+			auto prevColor = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
 			ImVec2 bufferOffset;	
 
 			for (auto& glyph : line)
@@ -762,24 +748,26 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				auto color = glyph.mMultiLineComment ? PaletteIndex::MultiLineComment : glyph.mColorIndex;
 
 				if ((color != prevColor || glyph.mChar == '\t') && !buffer.empty())
-				{					
-					drawList->AddText(textScreenPos + bufferOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
+				{
+					const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
+					drawList->AddText(newOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
 					auto textSize = ImGui::CalcTextSize(buffer.c_str());
-					bufferOffset.x += textSize.x;
+					bufferOffset.x += textSize.x + 1.0f * fontScale;
 					buffer.clear();
-					prevColor = color;
 				}
+				prevColor = color;
 
 				if (glyph.mChar == '\t')
-					bufferOffset.x = std::floor(bufferOffset.x / (float(mTabSize) * mSpaceSize)) *  (float(mTabSize) * mSpaceSize);				
-
-				appendIndex = AppendBuffer(buffer, glyph.mChar, appendIndex);
+					bufferOffset.x = (1.0 * fontScale + std::floor((1.0f + bufferOffset.x)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+				else
+					AppendBuffer(buffer, glyph.mChar, 0);
 				++columnNo;
 			}
 
 			if (!buffer.empty())
 			{
-				drawList->AddText(textScreenPos + bufferOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
+				const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
+				drawList->AddText(newOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
 				buffer.clear();
 			}
 
@@ -1556,7 +1544,7 @@ std::string TextEditor::GetSelectedText() const
 
 std::string TextEditor::GetCurrentLineText()const
 {
-	auto lineLength     = mLines[mState.mCursorPosition.mLine].size();
+	auto lineLength = (int) mLines[mState.mCursorPosition.mLine].size();
 	return GetText(Coordinates(mState.mCursorPosition.mLine, 0), Coordinates(mState.mCursorPosition.mLine, lineLength));
 }
 
@@ -1732,20 +1720,23 @@ void TextEditor::ColorizeInternal()
 
 float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 {
-	auto& line          = mLines[aFrom.mLine];
-	float distance      = 0.0f;
-	float spaceDistance = ImGui::CalcTextSize(" ").x;
-
+	auto& line = mLines[aFrom.mLine];
+	float distance = 0.0f;
+	auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
+	float spaceSize = ImGui::CalcTextSize(" ").x + 1.0f * fontScale;
 	for (size_t it = 0u; it < line.size() && it < (unsigned)aFrom.mColumn; ++it)
 	{
 		if (line[it].mChar == '\t')
 		{
-			distance = (std::floor(distance / (spaceDistance * float(mTabSize))) + 1.0f ) * (spaceDistance * float(mTabSize)) ;
-		}else{
+			distance = (1.0 * fontScale + std::floor((1.0f + distance)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+		//	distance = (std::floor(1.0f + distance / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+		}
+		else
+		{
 			char tempCString[2];
  			tempCString[0] = line[it].mChar;
 			tempCString[1] = '\0';
-			distance += ImGui::CalcTextSize(tempCString).x;
+			distance += ImGui::CalcTextSize(tempCString).x + 1.0f * fontScale;
 		}
 	}
 
