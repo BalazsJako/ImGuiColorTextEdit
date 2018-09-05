@@ -344,7 +344,7 @@ void TextEditor::RemoveLine(int aIndex)
 	ErrorMarkers etmp;
 	for (auto& i : mErrorMarkers)
 	{
-		ErrorMarkers::value_type e(i.first >= aIndex ? i.first - 1 : i.first, i.second);
+		ErrorMarkers::value_type e(i.first > aIndex ? i.first - 1 : i.first, i.second);
 		if (e.first == aIndex)
 			continue;
 		etmp.insert(e);
