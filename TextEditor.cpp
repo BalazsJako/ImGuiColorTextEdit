@@ -114,8 +114,16 @@ TextEditor::Coordinates TextEditor::SanitizeCoordinates(const Coordinates & aVal
 
 	if (line >= (int)mLines.size())
 	{
-		line = (int)mLines.size() - 1;
-		column = mLines.empty() ? 0 : (int)mLines[line].size();
+		if (mLines.empty())
+		{
+			line = 0;
+			column = 0;
+		}
+		else
+		{
+			line = (int)mLines.size() - 1;
+			column = (int)mLines[line].size();
+		}
 	}
 	else
 	{
