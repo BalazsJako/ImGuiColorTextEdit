@@ -427,8 +427,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ImGui::PushAllowKeyboardFocus(true);
 
 	auto shift = io.KeyShift;
-	auto ctrl = io.KeyCtrl;
-	auto alt = io.KeyAlt;
+	auto ctrl = io.OptMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
+	auto alt = io.OptMacOSXBehaviors ? io.KeyCtrl : io.KeyAlt;
 
 	if (ImGui::IsWindowFocused())
 	{
@@ -489,7 +489,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
 
-		if (!IsReadOnly())
+		if (!IsReadOnly() && !ctrl && !alt)
 		{
 			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
 			{
