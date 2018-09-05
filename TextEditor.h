@@ -129,7 +129,7 @@ public:
 	struct Glyph
 	{
 		Char mChar;
-		PaletteIndex mColorIndex : 7;
+		PaletteIndex mColorIndex = PaletteIndex::Default;
 		bool mMultiLineComment : 1;
 
 		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
@@ -178,13 +178,15 @@ public:
 	void SetText(const std::string& aText);
 	std::string GetText() const;
 	std::string GetSelectedText() const;
-
+	std::string GetCurrentLineText()const;
+	
 	int GetTotalLines() const { return (int)mLines.size(); }
 	bool IsOverwrite() const { return mOverwrite; }
 
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
+	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
 
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
@@ -271,7 +273,7 @@ private:
 	void Colorize(int aFromLine = 0, int aCount = -1);
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
 	void ColorizeInternal();
-	int TextDistanceToLineStart(const Coordinates& aFrom) const;
+	float TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
 	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
@@ -307,6 +309,9 @@ private:
 	bool mWithinRender;
 	bool mScrollToCursor;
 	bool mTextChanged;
+	int  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
+	int  mLeftMargin;
+	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
 
