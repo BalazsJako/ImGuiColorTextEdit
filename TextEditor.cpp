@@ -194,8 +194,7 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 	auto chr = *aValue;
 	while (chr != '\0')
 	{
-		if (mLines.empty())
-			mLines.push_back(Line());
+		assert(!mLines.empty());
 
 		if (chr == '\r')
 		{
@@ -337,7 +336,9 @@ bool TextEditor::IsOnWordBoundary(const Coordinates & aAt) const
 void TextEditor::RemoveLine(int aStart, int aEnd)
 {
 	assert(!mReadOnly);
-
+	assert(aEnd >= aStart);
+	assert(mLines.size() > aEnd - aStart);
+	
 	ErrorMarkers etmp;
 	for (auto& i : mErrorMarkers)
 	{
@@ -358,6 +359,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aStart, mLines.begin() + aEnd);
+	assert(!mLines.empty());
 
 	mTextChanged = true;
 }
@@ -365,6 +367,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 void TextEditor::RemoveLine(int aIndex)
 {
 	assert(!mReadOnly);
+	assert(mLines.size() > 1);
 
 	ErrorMarkers etmp;
 	for (auto& i : mErrorMarkers)
@@ -386,6 +389,7 @@ void TextEditor::RemoveLine(int aIndex)
 	mBreakpoints = std::move(btmp);
 
 	mLines.erase(mLines.begin() + aIndex);
+	assert(!mLines.empty());
 
 	mTextChanged = true;
 }
@@ -862,8 +866,7 @@ void TextEditor::EnterCharacter(Char aChar)
 	auto coord = GetActualCursorCoordinates();
 	u.mAddedStart = coord;
 
-	if (mLines.empty())
-		mLines.push_back(Line());
+	assert(!mLines.empty());
 
 	if (aChar == '\n')
 	{
