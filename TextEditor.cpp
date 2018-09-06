@@ -698,7 +698,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				Draw line number (right aligned)
 			*/
 
-			auto chars = snprintf(buf, 16, "%d  ", lineNo + 1);
+			snprintf(buf, 16, "%d  ", lineNo + 1);
 			auto lineNoWidth = ImGui::CalcTextSize(buf).x;
 			drawList->AddText(ImVec2(lineStartScreenPos.x + mTextStart - lineNoWidth, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
@@ -758,7 +758,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				prevColor = color;
 
 				if (glyph.mChar == '\t')
-					bufferOffset.x = (1.0 * fontScale + std::floor((1.0f + bufferOffset.x)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+					bufferOffset.x = (1.0f * fontScale + std::floor((1.0f + bufferOffset.x)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
 				else
 					AppendBuffer(buffer, glyph.mChar, 0);
 				++columnNo;
@@ -1731,8 +1731,7 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 	{
 		if (line[it].mChar == '\t')
 		{
-			distance = (1.0 * fontScale + std::floor((1.0f + distance)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
-		//	distance = (std::floor(1.0f + distance / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+			distance = (1.0f * fontScale + std::floor((1.0f + distance)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
 		}
 		else
 		{
