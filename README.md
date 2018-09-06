@@ -19,11 +19,11 @@ Main features are:
  - error markers: the user can specify a list of error messages together the line of occurence, the editor will highligh the lines with red backround and display error message in a tooltip when the mouse cursor is hovered over the line
  - supports large files: there is no explicit limit set on file size or number of lines, performance is not affected when large files are loaded (except syntax coloring, see below)
  - color palette support: you can switch between different color palettes, or even define your own
-
+ - supports both fixed and variable-width fonts
+ 
 Known issues:
  - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
  - 8 bit character only, no Unicode or Utf support (yet)
- - no variable-width font support
  - there's no find/replace support
 
 Don't forget to post your screenshots if you use this little piece of software in order to keep me motivated. :)
