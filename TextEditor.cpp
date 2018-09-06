@@ -863,9 +863,12 @@ void TextEditor::EnterCharacter(Char aChar)
 		InsertLine(coord.mLine + 1);
 		auto& line = mLines[coord.mLine];
 		auto& newLine = mLines[coord.mLine + 1];
-		newLine.insert(newLine.begin(), line.begin() + coord.mColumn, line.end());
+		for (size_t it = 0; it < line.size() && isblank(line[it].mChar); ++it)
+			newLine.push_back(line[it]);
+		const size_t whitespaceSize = newLine.size();
+		newLine.insert(newLine.end(), line.begin() + coord.mColumn, line.end());
 		line.erase(line.begin() + coord.mColumn, line.begin() + line.size());
-		SetCursorPosition(Coordinates(coord.mLine + 1, 0));
+		SetCursorPosition(Coordinates(coord.mLine + 1, (int)whitespaceSize));
 	}
 	else
 	{
