@@ -821,7 +821,11 @@ void TextEditor::SetText(const std::string & aText)
 	mLines.push_back(Line());
 	for (auto chr : aText)
 	{
-		if (chr == '\n')
+		if (chr == '\r')
+		{
+			// ignore the carriage return character
+		}
+		else if (chr == '\n')
 			mLines.push_back(Line());
 		else
 		{
