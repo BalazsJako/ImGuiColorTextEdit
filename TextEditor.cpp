@@ -773,25 +773,28 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			++lineNo;
 		}
-
-		auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
-		if (!id.empty())
+		
+		if (ImGui::IsMousePosValid())
 		{
-			auto it = mLanguageDefinition.mIdentifiers.find(id);
-			if (it != mLanguageDefinition.mIdentifiers.end())
+			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
+			if (!id.empty())
 			{
-				ImGui::BeginTooltip();
-				ImGui::TextUnformatted(it->second.mDeclaration.c_str());
-				ImGui::EndTooltip();
-			}
-			else
-			{
-				auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
-				if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+				auto it = mLanguageDefinition.mIdentifiers.find(id);
+				if (it != mLanguageDefinition.mIdentifiers.end())
 				{
 					ImGui::BeginTooltip();
-					ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+					ImGui::TextUnformatted(it->second.mDeclaration.c_str());
 					ImGui::EndTooltip();
+				}
+				else
+				{
+					auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
+					if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+					{
+						ImGui::BeginTooltip();
+						ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+						ImGui::EndTooltip();
+					}
 				}
 			}
 		}
