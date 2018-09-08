@@ -148,6 +148,8 @@ public:
 		Identifiers mIdentifiers;
 		Identifiers mPreprocIdentifiers;
 		std::string mCommentStart, mCommentEnd;
+		
+		std::function<bool(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex)> mTokenize;
 
 		TokenRegexStrings mTokenRegexStrings;
 
