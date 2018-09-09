@@ -1761,7 +1761,7 @@ void TextEditor::ColorizeInternal()
 		mCheckMultilineComments = false;
 		return;
 	}
-	
+
 	if (mColorRangeMin < mColorRangeMax)
 	{
 		const int increment = (mLanguageDefinition.mTokenize == nullptr) ? 10 : 10000;
@@ -2163,7 +2163,7 @@ static bool tokenize_cstyle_punctuation(const char * in_begin, const char * in_e
 	return false;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2234,7 +2234,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::HLSL()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::HLSL()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2305,7 +2305,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::HLSL()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::GLSL()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2353,7 +2353,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::C()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2421,7 +2421,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::SQL()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::SQL()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2484,7 +2484,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::SQL()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::AngelScript()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::AngelScript()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;
@@ -2533,7 +2533,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::AngelScript()
 	return langDef;
 }
 
-TextEditor::LanguageDefinition TextEditor::LanguageDefinition::Lua()
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 {
 	static bool inited = false;
 	static LanguageDefinition langDef;

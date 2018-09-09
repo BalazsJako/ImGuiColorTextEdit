@@ -155,13 +155,13 @@ public:
 
 		bool mCaseSensitive;
 
-		static LanguageDefinition CPlusPlus();
-		static LanguageDefinition HLSL();
-		static LanguageDefinition GLSL();
-		static LanguageDefinition C();
-		static LanguageDefinition SQL();
-		static LanguageDefinition AngelScript();
-		static LanguageDefinition Lua();
+		static const LanguageDefinition& CPlusPlus();
+		static const LanguageDefinition& HLSL();
+		static const LanguageDefinition& GLSL();
+		static const LanguageDefinition& C();
+		static const LanguageDefinition& SQL();
+		static const LanguageDefinition& AngelScript();
+		static const LanguageDefinition& Lua();
 	};
 
 	TextEditor();
