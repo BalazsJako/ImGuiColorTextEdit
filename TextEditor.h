@@ -142,6 +142,7 @@ public:
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
+		typedef bool (*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
 		std::string mName;
 		Keywords mKeywords;
@@ -149,12 +150,17 @@ public:
 		Identifiers mPreprocIdentifiers;
 		std::string mCommentStart, mCommentEnd;
 		
-		std::function<bool(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex)> mTokenize;
+		TokenizeCallback mTokenize;
 
 		TokenRegexStrings mTokenRegexStrings;
 
 		bool mCaseSensitive;
-
+		
+		LanguageDefinition()
+			: mTokenize(nullptr)
+		{
+		}
+		
 		static const LanguageDefinition& CPlusPlus();
 		static const LanguageDefinition& HLSL();
 		static const LanguageDefinition& GLSL();
