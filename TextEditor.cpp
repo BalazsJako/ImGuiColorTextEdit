@@ -2193,6 +2193,8 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 		
 		langDef.mTokenize = [](const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex) -> bool
 		{
+			paletteIndex = PaletteIndex::Max;
+			
 			while (in_begin < in_end && isblank(*in_begin))
 				in_begin++;
 			
@@ -2201,47 +2203,23 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 				out_begin = in_end;
 				out_end = in_end;
 				paletteIndex = PaletteIndex::Default;
-				return true;
 			}
 			else if (tokenize_cstyle_comment(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::Comment;
-				return true;
-			}
 			else if (tokenize_cstyle_preprocessor_directive(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::Preprocessor;
-				return true;
-			}
 			else if (tokenize_cstyle_string(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::String;
-				return true;
-			}
 			else if (tokenize_cstyle_character_literal(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::CharLiteral;
-				return true;
-			}
 			else if (tokenize_cstyle_identifier(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::Identifier;
-				return true;
-			}
 			else if (tokenize_cstyle_number(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::Number;
-				return true;
-			}
 			else if (tokenize_cstyle_punctuation(in_begin, in_end, out_begin, out_end))
-			{
 				paletteIndex = PaletteIndex::Punctuation;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
+			
+			return paletteIndex != PaletteIndex::Max;
 		};
 		
 		langDef.mCommentStart = "/*";
@@ -2400,17 +2378,37 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?[0-9]+[Uu]?[lL]?[lL]?", PaletteIndex::Number));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[0-7]+[Uu]?[lL]?[lL]?", PaletteIndex::Number));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex::Number));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex::Identifier));
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex::Punctuation));
-
+		langDef.mTokenize = [](const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex) -> bool
+		{
+			paletteIndex = PaletteIndex::Max;
+			
+			while (in_begin < in_end && isblank(*in_begin))
+				in_begin++;
+			
+			if (in_begin == in_end)
+			{
+				out_begin = in_end;
+				out_end = in_end;
+				paletteIndex = PaletteIndex::Default;
+			}
+			else if (tokenize_cstyle_comment(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::Comment;
+			else if (tokenize_cstyle_preprocessor_directive(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::Preprocessor;
+			else if (tokenize_cstyle_string(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::String;
+			else if (tokenize_cstyle_character_literal(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::CharLiteral;
+			else if (tokenize_cstyle_identifier(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::Identifier;
+			else if (tokenize_cstyle_number(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::Number;
+			else if (tokenize_cstyle_punctuation(in_begin, in_end, out_begin, out_end))
+				paletteIndex = PaletteIndex::Punctuation;
+			
+			return paletteIndex != PaletteIndex::Max;
+		};
+		
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
 
