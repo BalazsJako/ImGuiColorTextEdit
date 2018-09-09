@@ -668,7 +668,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 			auto start = ImVec2(lineStartScreenPos.x + scrollX, lineStartScreenPos.y);
 
-			if (mBreakpoints.find(lineNo + 1) != mBreakpoints.end())
+			if (mBreakpoints.count(lineNo + 1) != 0)
 			{
 				auto end = ImVec2(lineStartScreenPos.x + contentSize.x + 2.0f * scrollX, lineStartScreenPos.y + mCharAdvance.y);
 				drawList->AddRectFilled(start, end, mPalette[(int)PaletteIndex::Breakpoint]);
@@ -1659,16 +1659,16 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 
 					if (!preproc)
 					{
-						if (mLanguageDefinition.mKeywords.find(id) != mLanguageDefinition.mKeywords.end())
+						if (mLanguageDefinition.mKeywords.count(id) != 0)
 							token_color = PaletteIndex::Keyword;
-						else if (mLanguageDefinition.mIdentifiers.find(id) != mLanguageDefinition.mIdentifiers.end())
+						else if (mLanguageDefinition.mIdentifiers.count(id) != 0)
 							token_color = PaletteIndex::KnownIdentifier;
-						else if (mLanguageDefinition.mPreprocIdentifiers.find(id) != mLanguageDefinition.mPreprocIdentifiers.end())
+						else if (mLanguageDefinition.mPreprocIdentifiers.count(id) != 0)
 							token_color = PaletteIndex::PreprocIdentifier;
 					}
 					else
 					{
-						if (mLanguageDefinition.mPreprocIdentifiers.find(id) != mLanguageDefinition.mPreprocIdentifiers.end())
+						if (mLanguageDefinition.mPreprocIdentifiers.count(id) != 0)
 							token_color = PaletteIndex::PreprocIdentifier;
 						else
 							token_color = PaletteIndex::Identifier;
@@ -1761,7 +1761,7 @@ void TextEditor::ColorizeInternal()
 		mCheckMultilineComments = false;
 		return;
 	}
-
+	
 	if (mColorRangeMin < mColorRangeMax)
 	{
 		const int increment = (mLanguageDefinition.mTokenize == nullptr) ? 10 : 10000;
@@ -2005,7 +2005,7 @@ static bool tokenize_cstyle_identifier(const char * in_begin, const char * in_en
 {
 	const char * p = in_begin;
 	
-	if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z'))
+	if ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_')
 	{
 		p++;
 		
