@@ -1579,6 +1579,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 
 	std::string buffer;
 	std::cmatch results;
+	std::string id;
 	
 	int endLine = std::max(0, std::min((int)mLines.size(), aToLine));
 	for (int i = aFromLine; i < endLine; ++i)
@@ -1642,20 +1643,15 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 			}
 			else
 			{
-				const size_t kMaxIdentifierLength = 100;
-				
 				const size_t token_length = token_end - token_begin;
 				
-				if (token_color == PaletteIndex::Identifier && token_length < kMaxIdentifierLength)
+				if (token_color == PaletteIndex::Identifier)
 				{
-					char id[kMaxIdentifierLength];
-					for (size_t i = 0; i < token_length; ++i)
-						id[i] = token_begin[i];
-					id[token_length] = 0;
+					id.assign(token_begin, token_end);
 					
 				// todo : allmost all language definitions use lower case to specify keywords, so shouldn't this use ::tolower ?
 					if (!mLanguageDefinition.mCaseSensitive)
-						std::transform(id, id + token_length, id, ::toupper);
+						std::transform(id.begin(), id.end(), id.begin(), ::toupper);
 
 					if (!preproc)
 					{
