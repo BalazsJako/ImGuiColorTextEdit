@@ -11,7 +11,7 @@ While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not f
 
 The code is work in progress, please report if you find any issues.
 
-Main features are:
+#Main features
  - approximates typical code editor look and feel (essential mouse/keyboard commands work - I mean, the commands _I_ normally use :))
  - undo/redo support
  - extensible, multiple language syntax support
@@ -21,12 +21,12 @@ Main features are:
  - color palette support: you can switch between different color palettes, or even define your own
  - supports both fixed and variable-width fonts
  
-Known issues:
+#Known issues
  - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
  - 8 bit character only, no Unicode or Utf support (yet)
  - there's no find/replace support
 
-Don't forget to post your screenshots if you use this little piece of software in order to keep me motivated. :)
+Don't forget to post your screenshots if you use this little piece of software in order to keep me us motivated. :)
 
 # Contributing
 Pull requests are welcome, feel free to contribute if you have implemented something which might be useful for the general audience of this little piece of software. Apparently, it became kind of a community project now. :)
