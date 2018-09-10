@@ -5,11 +5,11 @@ Syntax highlighting text editor for ImGui
 
 Demo project: https://github.com/BalazsJako/ColorTextEditorDemo
 
-This is my attempt to write a relatively simple widget which provides source code editing functionality with basic syntax highlighting.
+This started as my attempt to write a relatively simple widget which provides source code editing functionality with basic syntax highlighting. Now there are other contributors who provide valuable additions.
 
-While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex internal state, it did not seem to be practical to try and enforce fully immediate mode.
+While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex and large internal state, it did not seem to be practical to try and enforce fully immediate mode.
 
-The code is work in progress, please report if you find any issues.
+The code is (still) work in progress, please report if you find any issues.
 
 # Main features
  - approximates typical code editor look and feel (essential mouse/keyboard commands work - I mean, the commands _I_ normally use :))
@@ -22,8 +22,8 @@ The code is work in progress, please report if you find any issues.
  - supports both fixed and variable-width fonts
  
 # Known issues
- - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
- - 8 bit character only, no Unicode or Utf support (yet)
+ - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a generated lexical scanner might help resolve this problem.
+ - 8 bit character only, no Unicode or Utf support
  - there's no find/replace support
 
 Don't forget to post your screenshots if you use this little piece of software in order to keep me us motivated. :)
@@ -36,5 +36,6 @@ Whem contributing, please follow the following guidelines. I will keep it update
 - Please submit to the 'dev' branch first for testing, and it will be merged to 'main' if it seems to work fine. I would like try keep 'master' in a good working condition, as more and more people are using it.
 - Please send your submissions in small, well defined requests, i. e. do not accumulate many unrelated changes in one large pull request. Keep your submissions as small as possible, it will make everyone's life easier.
 - Avoid using ImGui internal since it would make the source fragile against internal changes in ImGui.
+- Try to keep the perormance high in the render function. Try to avoid doing anything which leads to memory allocations (like using temporary std::string, std::vector variables). 
 
 Thank you. :)
