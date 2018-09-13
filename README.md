@@ -5,13 +5,13 @@ Syntax highlighting text editor for ImGui
 
 Demo project: https://github.com/BalazsJako/ColorTextEditorDemo
 
-This is my attempt to write a relatively simple widget which provides source code editing functionality with basic syntax highlighting.
+This started as my attempt to write a relatively simple widget which provides source code editing functionality with basic syntax highlighting. Now there are other contributors who provide valuable additions.
 
-While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex internal state, it did not seem to be practical to try and enforce fully immediate mode.
+While it relies on Omar Cornut's https://github.com/ocornut/imgui, it does not follow the "pure" one widget - one function approach. Since the editor has to maintain a relatively complex and large internal state, it did not seem to be practical to try and enforce fully immediate mode.
 
-The code is work in progress, please report if you find any issues.
+The code is (still) work in progress, please report if you find any issues.
 
-Main features are:
+# Main features
  - approximates typical code editor look and feel (essential mouse/keyboard commands work - I mean, the commands _I_ normally use :))
  - undo/redo support
  - extensible, multiple language syntax support
@@ -21,9 +21,11 @@ Main features are:
  - color palette support: you can switch between different color palettes, or even define your own
  - supports both fixed and variable-width fonts
  
-Known issues:
- - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a lexical scanner might help resolve this problem.
- - 8 bit character only, no Unicode or Utf support (yet)
+# Known issues
+ - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a generated lexical scanner might help resolve this problem.
+ - 8 bit character only, no Unicode or Utf support
  - there's no find/replace support
 
-Don't forget to post your screenshots if you use this little piece of software in order to keep me motivated. :)
+Don't forget to post your screenshots if you use this little piece of software in order to keep me us motivated. :)
+
+Thank you. :)

@@ -317,7 +317,7 @@ private:
 	bool mWithinRender;
 	bool mScrollToCursor;
 	bool mTextChanged;
-	int  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
+	float  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
 	int  mLeftMargin;
 	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;
@@ -333,4 +333,3 @@ private:
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
 };
-
