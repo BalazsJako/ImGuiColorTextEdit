@@ -373,7 +373,7 @@ void TextEditor::RemoveLine(int aIndex)
 	for (auto& i : mErrorMarkers)
 	{
 		ErrorMarkers::value_type e(i.first > aIndex ? i.first - 1 : i.first, i.second);
-		if (e.first == aIndex)
+		if (e.first - 1 == aIndex)
 			continue;
 		etmp.insert(e);
 	}
@@ -1299,7 +1299,6 @@ void TextEditor::BackSpace()
 	if (mLines.empty())
 		return;
 
-
 	UndoRecord u;
 	u.mBefore = mState;
 
@@ -1329,6 +1328,12 @@ void TextEditor::BackSpace()
 			auto& prevLine = mLines[mState.mCursorPosition.mLine - 1];
 			auto prevSize = (int)prevLine.size();
 			prevLine.insert(prevLine.end(), line.begin(), line.end());
+
+			ErrorMarkers etmp;
+			for (auto& i : mErrorMarkers)
+				etmp.insert(ErrorMarkers::value_type(i.first - 1 == mState.mCursorPosition.mLine ? i.first - 1 : i.first, i.second));
+			mErrorMarkers = std::move(etmp);
+
 			RemoveLine(mState.mCursorPosition.mLine);
 			--mState.mCursorPosition.mLine;
 			mState.mCursorPosition.mColumn = prevSize;
