@@ -300,7 +300,7 @@ private:
 	void RemoveLine(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
-	void EnterCharacter(Char aChar);
+	void EnterCharacter(Char aChar, bool aShift);
 	void BackSpace();
 	void DeleteSelection();
 	std::string GetWordUnderCursor() const;

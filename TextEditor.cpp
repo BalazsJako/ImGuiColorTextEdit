@@ -511,8 +511,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			Cut();
 		else if (ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_A)))
 			SelectAll();
-		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)) )
-			EnterCharacter('\n');
+		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
+			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt)
 		{
 			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
@@ -522,7 +522,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 				{
 					if (isprint(c) || isspace(c))
 					{
-						EnterCharacter((char)c);
+						EnterCharacter((char)c, shift);
 					}
 				}
 			}
@@ -847,7 +847,7 @@ void TextEditor::SetText(const std::string & aText)
 	Colorize();
 }
 
-void TextEditor::EnterCharacter(Char aChar)
+void TextEditor::EnterCharacter(Char aChar, bool aShift)
 {
 	assert(!mReadOnly);
 
@@ -857,10 +857,77 @@ void TextEditor::EnterCharacter(Char aChar)
 
 	if (HasSelection())
 	{
-		u.mRemoved = GetSelectedText();
-		u.mRemovedStart = mState.mSelectionStart;
-		u.mRemovedEnd = mState.mSelectionEnd;
-		DeleteSelection();
+		if (aChar == '\t')
+		{
+			auto start = mState.mSelectionStart;
+			auto end = mState.mSelectionEnd;
+
+			if (start > end)
+				std::swap(start, end);
+			start.mColumn = 0;
+//			end.mColumn = end.mLine < mLines.size() ? mLines[end.mLine].size() : 0;
+			if (end.mColumn == 0 && end.mLine > 0)
+			{
+				--end.mLine;
+				end.mColumn = mLines[end.mLine].size();
+			}
+
+			u.mRemovedStart = start;
+			u.mRemovedEnd = end;
+			u.mRemoved = GetText(start, end);
+
+			bool modified = false;
+
+			for (int i = start.mLine; i <= end.mLine; i++)
+			{
+				auto& line = mLines[i];
+				if (aShift)
+				{
+					if (line[0].mChar == '\t')
+					{
+						line.erase(line.begin());
+						if (i == end.mLine && end.mColumn > 0)
+							end.mColumn--;
+						modified = true;
+					}
+					else for (int j = 0; j < mTabSize && line[0].mChar == ' '; j++)
+					{
+						line.erase(line.begin());
+						if (i == end.mLine && end.mColumn > 0)
+							end.mColumn--;
+						modified = true;
+					}
+				}
+				else
+				{
+					line.insert(line.begin(), Glyph('\t', TextEditor::PaletteIndex::Background));
+					if (i == end.mLine)
+						++end.mColumn;
+					modified = true;
+				}
+			}
+
+			if (modified)
+			{
+				u.mAddedStart = start;
+				u.mAddedEnd = end;
+				u.mAdded = GetText(start, end);
+
+				mTextChanged = true;
+
+				AddUndo(u);
+				EnsureCursorVisible();
+			}
+
+			return;
+		}
+		else
+		{
+			u.mRemoved = GetSelectedText();
+			u.mRemovedStart = mState.mSelectionStart;
+			u.mRemovedEnd = mState.mSelectionEnd;
+			DeleteSelection();
+		}
 	}
 
 	auto coord = GetActualCursorCoordinates();
