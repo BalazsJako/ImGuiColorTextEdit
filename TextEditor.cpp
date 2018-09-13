@@ -1906,7 +1906,7 @@ void TextEditor::UndoRecord::Redo(TextEditor * aEditor)
 	aEditor->EnsureCursorVisible();
 }
 
-static bool tokenize_cstyle_comment(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStyleComment(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	if (*in_begin != '/')
 		return false;
@@ -1921,7 +1921,7 @@ static bool tokenize_cstyle_comment(const char * in_begin, const char * in_end, 
 	return false;
 }
 
-static bool tokenize_cstyle_preprocessor_directive(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStylePreprocessorDirective(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	if (*in_begin != '#')
 		return false;
@@ -1949,7 +1949,7 @@ static bool tokenize_cstyle_preprocessor_directive(const char * in_begin, const 
 	return false;
 }
 
-static bool tokenize_cstyle_string(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStyleString(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	const char * p = in_begin;
 	
@@ -1978,7 +1978,7 @@ static bool tokenize_cstyle_string(const char * in_begin, const char * in_end, c
 	return false;
 }
 
-static bool tokenize_cstyle_character_literal(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStyleCharacterLiteral(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	const char * p = in_begin;
 
@@ -2005,7 +2005,7 @@ static bool tokenize_cstyle_character_literal(const char * in_begin, const char 
 	return false;
 }
 
-static bool tokenize_cstyle_identifier(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStyleIdentifier(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	const char * p = in_begin;
 	
@@ -2024,7 +2024,7 @@ static bool tokenize_cstyle_identifier(const char * in_begin, const char * in_en
 	return false;
 }
 
-static bool tokenize_cstyle_number(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	const char * p = in_begin;
 	
@@ -2131,7 +2131,7 @@ static bool tokenize_cstyle_number(const char * in_begin, const char * in_end, c
 	return true;
 }
 
-static bool tokenize_cstyle_punctuation(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
+static bool TokenizeCStylePunctuation(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
 	switch (*in_begin)
 	{
@@ -2208,19 +2208,19 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus(
 				out_end = in_end;
 				paletteIndex = PaletteIndex::Default;
 			}
-			else if (tokenize_cstyle_comment(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleComment(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Comment;
-			else if (tokenize_cstyle_preprocessor_directive(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStylePreprocessorDirective(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Preprocessor;
-			else if (tokenize_cstyle_string(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::String;
-			else if (tokenize_cstyle_character_literal(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::CharLiteral;
-			else if (tokenize_cstyle_identifier(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleIdentifier(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Identifier;
-			else if (tokenize_cstyle_number(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleNumber(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Number;
-			else if (tokenize_cstyle_punctuation(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStylePunctuation(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Punctuation;
 			
 			return paletteIndex != PaletteIndex::Max;
@@ -2398,19 +2398,19 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::C()
 				out_end = in_end;
 				paletteIndex = PaletteIndex::Default;
 			}
-			else if (tokenize_cstyle_comment(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleComment(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Comment;
-			else if (tokenize_cstyle_preprocessor_directive(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStylePreprocessorDirective(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Preprocessor;
-			else if (tokenize_cstyle_string(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::String;
-			else if (tokenize_cstyle_character_literal(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::CharLiteral;
-			else if (tokenize_cstyle_identifier(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleIdentifier(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Identifier;
-			else if (tokenize_cstyle_number(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStyleNumber(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Number;
-			else if (tokenize_cstyle_punctuation(in_begin, in_end, out_begin, out_end))
+			else if (TokenizeCStylePunctuation(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::Punctuation;
 			
 			return paletteIndex != PaletteIndex::Max;
