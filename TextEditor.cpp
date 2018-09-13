@@ -873,9 +873,17 @@ void TextEditor::EnterCharacter(Char aChar)
 		InsertLine(coord.mLine + 1);
 		auto& line = mLines[coord.mLine];
 		auto& newLine = mLines[coord.mLine + 1];
-		newLine.insert(newLine.begin(), line.begin() + coord.mColumn, line.end());
+		
+		if (mLanguageDefinition.mAutoIndentation)
+		{
+			for (size_t it = 0; it < line.size() && isblank(line[it].mChar); ++it)
+				newLine.push_back(line[it]);
+		}
+		
+		const size_t whitespaceSize = newLine.size();
+		newLine.insert(newLine.end(), line.begin() + coord.mColumn, line.end());
 		line.erase(line.begin() + coord.mColumn, line.begin() + line.size());
-		SetCursorPosition(Coordinates(coord.mLine + 1, 0));
+		SetCursorPosition(Coordinates(coord.mLine + 1, (int)whitespaceSize));
 	}
 	else
 	{
@@ -1895,6 +1903,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::CPlusPlus()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = true;
 
 		langDef.mName = "C++";
 
@@ -1966,6 +1975,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::HLSL()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = true;
 
 		langDef.mName = "HLSL";
 
@@ -2014,6 +2024,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::GLSL()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = true;
 
 		langDef.mName = "GLSL";
 
@@ -2062,6 +2073,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::C()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = true;
 
 		langDef.mName = "C";
 
@@ -2125,6 +2137,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::SQL()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = false;
+		langDef.mAutoIndentation = false;
 
 		langDef.mName = "SQL";
 
@@ -2174,6 +2187,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::AngelScript()
 		langDef.mCommentEnd = "*/";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = true;
 
 		langDef.mName = "AngelScript";
 
@@ -2227,6 +2241,7 @@ TextEditor::LanguageDefinition TextEditor::LanguageDefinition::Lua()
 		langDef.mCommentEnd = "\\]\\]";
 
 		langDef.mCaseSensitive = true;
+		langDef.mAutoIndentation = false;
 
 		langDef.mName = "Lua";
 

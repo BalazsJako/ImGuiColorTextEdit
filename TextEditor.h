@@ -152,6 +152,7 @@ public:
 		TokenRegexStrings mTokenRegexStrings;
 
 		bool mCaseSensitive;
+		bool mAutoIndentation;
 
 		static LanguageDefinition CPlusPlus();
 		static LanguageDefinition HLSL();
