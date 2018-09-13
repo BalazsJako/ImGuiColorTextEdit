@@ -22,10 +22,14 @@ The code is (still) work in progress, please report if you find any issues.
  - supports both fixed and variable-width fonts
  
 # Known issues
- - syntax highligthing is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. Hand-written colorizers and/or a generated lexical scanner might help resolve this problem.
+ - syntax highligthing of most languages - except C/C++ - is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. C/C++ has a hand-written tokenizer which is much faster. 
  - 8 bit character only, no Unicode or Utf support
  - there's no find/replace support
 
 Don't forget to post your screenshots if you use this little piece of software in order to keep me us motivated. :)
+
+# Contribute
+
+If you want to contribute, please refer to CONTRIBUTE file.
 
 Thank you. :)
