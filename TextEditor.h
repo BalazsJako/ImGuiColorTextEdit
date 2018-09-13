@@ -149,7 +149,8 @@ public:
 		Identifiers mIdentifiers;
 		Identifiers mPreprocIdentifiers;
 		std::string mCommentStart, mCommentEnd;
-		
+		bool mAutoIndentation;
+
 		TokenizeCallback mTokenize;
 
 		TokenRegexStrings mTokenRegexStrings;
