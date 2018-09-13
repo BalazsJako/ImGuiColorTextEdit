@@ -2035,9 +2035,6 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 	
 	p++;
 	
-	while (p < in_end && isblank(*p))
-		p++;
-	
 	bool hasNumber = startsWithNumber;
 	
 	while (p < in_end && (*p >= '0' && *p <= '9'))
