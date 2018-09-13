@@ -142,25 +142,32 @@ public:
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
+		typedef bool (*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
 		std::string mName;
 		Keywords mKeywords;
 		Identifiers mIdentifiers;
 		Identifiers mPreprocIdentifiers;
 		std::string mCommentStart, mCommentEnd;
+		
+		TokenizeCallback mTokenize;
 
 		TokenRegexStrings mTokenRegexStrings;
 
 		bool mCaseSensitive;
-		bool mAutoIndentation;
-
-		static LanguageDefinition CPlusPlus();
-		static LanguageDefinition HLSL();
-		static LanguageDefinition GLSL();
-		static LanguageDefinition C();
-		static LanguageDefinition SQL();
-		static LanguageDefinition AngelScript();
-		static LanguageDefinition Lua();
+		
+		LanguageDefinition()
+			: mTokenize(nullptr)
+		{
+		}
+		
+		static const LanguageDefinition& CPlusPlus();
+		static const LanguageDefinition& HLSL();
+		static const LanguageDefinition& GLSL();
+		static const LanguageDefinition& C();
+		static const LanguageDefinition& SQL();
+		static const LanguageDefinition& AngelScript();
+		static const LanguageDefinition& Lua();
 	};
 
 	TextEditor();
