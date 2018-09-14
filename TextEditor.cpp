@@ -1314,7 +1314,7 @@ void TextEditor::BackSpace()
 				return;
 
 			u.mRemoved = '\n';
-			u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
+			u.mRemovedStart = u.mRemovedEnd = Coordinates(pos.mLine - 1, (int)mLines[pos.mLine - 1].size());
 			Advance(u.mRemovedEnd);
 
 			auto& line = mLines[mState.mCursorPosition.mLine];
