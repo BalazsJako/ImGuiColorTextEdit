@@ -262,7 +262,7 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 		
 		// First we find the hovered column coord.
 		while ( mTextStart + cumulatedStringWidth[0] < local.x &&
-			    columnCoord < line.size())
+			    (size_t)columnCoord < line.size())
 		{		
 			cumulatedStringWidth[1] = cumulatedStringWidth[0]; 
 			cumulatedString += line[columnCoord].mChar;
@@ -273,7 +273,7 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 
 		// Then we reduce by 1 column coord if cursor is on the left side of the hovered column.
 		if( mTextStart + cumulatedStringWidth[0] - columnWidth / 2.0f > local.x)
-			columnCoord = std::max(0, --columnCoord);
+			columnCoord = std::max(0, columnCoord - 1);
 	}
 
 	return SanitizeCoordinates(Coordinates(lineNo, columnCoord));
@@ -337,7 +337,7 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 {
 	assert(!mReadOnly);
 	assert(aEnd >= aStart);
-	assert(mLines.size() > aEnd - aStart);
+	assert(mLines.size() > (size_t)(aEnd - aStart));
 	
 	ErrorMarkers etmp;
 	for (auto& i : mErrorMarkers)
@@ -1027,7 +1027,7 @@ void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aE
 	case TextEditor::SelectionMode::Line:
 	{
 		const auto lineNo = mState.mSelectionEnd.mLine;
-		const auto lineSize = lineNo < mLines.size() ? mLines[lineNo].size() : 0;
+		const auto lineSize = (size_t)lineNo < mLines.size() ? mLines[lineNo].size() : 0;
 		mState.mSelectionStart = Coordinates(mState.mSelectionStart.mLine, 0);
 		mState.mSelectionEnd = Coordinates(lineNo, (int) lineSize);
 		break;
@@ -1755,7 +1755,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 					preproc = true;
 				}
 				
-				for (int j = 0; j < token_length; ++j)
+				for (size_t j = 0; j < token_length; ++j)
 					line[(token_begin - bufferBegin) + j].mColorIndex = token_color;
 				
 				first = token_end;
@@ -2202,6 +2202,8 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 
 static bool TokenizeCStylePunctuation(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
 {
+	(void)in_end;
+
 	switch (*in_begin)
 	{
 		case '[':
