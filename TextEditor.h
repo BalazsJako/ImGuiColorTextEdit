@@ -185,7 +185,9 @@ public:
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
+	void SetTextLines(const std::vector<std::string>& aLines);
 	std::string GetText() const;
+	std::vector<std::string> GetTextLines() const;
 	std::string GetSelectedText() const;
 	std::string GetCurrentLineText()const;
 	

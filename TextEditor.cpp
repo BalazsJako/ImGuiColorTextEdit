@@ -825,7 +825,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 void TextEditor::SetText(const std::string & aText)
 {
 	mLines.clear();
-	mLines.push_back(Line());
+	mLines.emplace_back(Line());
 	for (auto chr : aText)
 	{
 		if (chr == '\r')
@@ -833,14 +833,43 @@ void TextEditor::SetText(const std::string & aText)
 			// ignore the carriage return character
 		}
 		else if (chr == '\n')
-			mLines.push_back(Line());
+			mLines.emplace_back(Line());
 		else
 		{
-			mLines.back().push_back(Glyph(chr, PaletteIndex::Default));
+			mLines.back().emplace_back(Glyph(chr, PaletteIndex::Default));
 		}
 
 		mTextChanged = true;
 	}
+
+	mUndoBuffer.clear();
+
+	Colorize();
+}
+
+void TextEditor::SetTextLines(const std::vector<std::string> & aLines)
+{
+	mLines.clear();
+	
+	if (aLines.empty())
+	{
+		mLines.emplace_back(Line());
+	}
+	else
+	{
+		mLines.resize(aLines.size());
+		
+		for (size_t i = 0; i < aLines.size(); ++i)
+		{
+			const std::string & aLine = aLines[i];
+			
+			mLines[i].reserve(aLine.size());
+			for (size_t j = 0; j < aLine.size(); ++j)
+				mLines[i].emplace_back(Glyph(aLine[j], PaletteIndex::Default));
+		}
+	}
+
+	mTextChanged = true;
 
 	mUndoBuffer.clear();
 
@@ -1625,6 +1654,27 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 std::string TextEditor::GetText() const
 {
 	return GetText(Coordinates(), Coordinates((int)mLines.size(), 0));
+}
+
+std::vector<std::string> TextEditor::GetTextLines() const
+{
+	std::vector<std::string> result;
+	
+	result.reserve(mLines.size());
+	
+	for (auto & line : mLines)
+	{
+		std::string text;
+		
+		text.resize(line.size());
+		
+		for (size_t i = 0; i < line.size(); ++i)
+			text[i] = line[i].mChar;
+		
+		result.emplace_back(std::move(text));
+	}
+	
+	return result;
 }
 
 std::string TextEditor::GetSelectedText() const
