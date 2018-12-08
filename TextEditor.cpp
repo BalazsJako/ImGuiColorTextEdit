@@ -898,7 +898,7 @@ void TextEditor::EnterCharacter(Char aChar, bool aShift)
 			if (end.mColumn == 0 && end.mLine > 0)
 			{
 				--end.mLine;
-				end.mColumn = mLines[end.mLine].size();
+				end.mColumn = (int) mLines[end.mLine].size();
 			}
 
 			u.mRemovedStart = start;
