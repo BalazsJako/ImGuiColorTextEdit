@@ -313,6 +313,10 @@ private:
 	std::string GetWordAt(const Coordinates& aCoords) const;
 	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
 
+	void HandleKeyboardInputs();
+	void HandleMouseInputs();
+	void Render();
+
 	float mLineSpacing;
 	Lines mLines;
 	EditorState mState;
