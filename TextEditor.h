@@ -130,9 +130,12 @@ public:
 	{
 		Char mChar;
 		PaletteIndex mColorIndex = PaletteIndex::Default;
+		bool mComment : 1;
 		bool mMultiLineComment : 1;
+		bool mPreprocessor : 1;
 
-		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), mMultiLineComment(false) {}
+		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), 
+			mComment(false), mMultiLineComment(false), mPreprocessor(false) {}
 	};
 
 	typedef std::vector<Glyph> Line;
@@ -148,7 +151,8 @@ public:
 		Keywords mKeywords;
 		Identifiers mIdentifiers;
 		Identifiers mPreprocIdentifiers;
-		std::string mCommentStart, mCommentEnd;
+		std::string mCommentStart, mCommentEnd, mSingleLineComment;
+		char mPreprocChar;
 		bool mAutoIndentation;
 
 		TokenizeCallback mTokenize;
@@ -158,7 +162,7 @@ public:
 		bool mCaseSensitive;
 		
 		LanguageDefinition()
-			: mTokenize(nullptr)
+			: mTokenize(nullptr), mPreprocChar('#'), mAutoIndentation(true), mCaseSensitive(true)
 		{
 		}
 		
@@ -307,6 +311,7 @@ private:
 	void DeleteSelection();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
+	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
 
 	float mLineSpacing;
 	Lines mLines;
@@ -330,7 +335,7 @@ private:
 	LanguageDefinition mLanguageDefinition;
 	RegexList mRegexList;
 
-	bool mCheckMultilineComments;
+	bool mCheckComments;
 	Breakpoints mBreakpoints;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;

@@ -40,13 +40,12 @@ TextEditor::TextEditor()
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
-	, mCheckMultilineComments(true)
+	, mCheckComments(true)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
 	mLines.push_back(Line());
 }
-
 
 TextEditor::~TextEditor()
 {
@@ -432,6 +431,26 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 	return r;
 }
 
+ImU32 TextEditor::GetGlyphColor(const Glyph & aGlyph) const
+{
+	if (aGlyph.mComment)
+		return mPalette[(int)PaletteIndex::Comment];
+	if (aGlyph.mMultiLineComment)
+		return mPalette[(int)PaletteIndex::MultiLineComment];
+	auto const color = mPalette[(int)aGlyph.mColorIndex];
+	if (aGlyph.mPreprocessor)
+	{
+		const auto ppcolor = mPalette[(int)PaletteIndex::Preprocessor];
+		const int c0 = ((ppcolor & 0xff) + (color & 0xff)) / 2;
+		const int c1 = (((ppcolor >> 8) & 0xff) + ((color >> 8) & 0xff)) / 2;
+		const int c2 = (((ppcolor >> 16) & 0xff) + ((color >> 16) & 0xff)) / 2;
+		const int c3 = (((ppcolor >> 24) & 0xff) + ((color >> 24) & 0xff)) / 2;
+		return ImU32(c0 | (c1 << 8) | (c2 << 16) | (c3 << 24));
+	}
+
+	return color;
+}
+
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
 	mWithinRender = true;
@@ -743,18 +762,17 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			/*
 				Draw Text
 			*/
-
-			auto prevColor = line.empty() ? PaletteIndex::Default : (line[0].mMultiLineComment ? PaletteIndex::MultiLineComment : line[0].mColorIndex);
-			ImVec2 bufferOffset;	
+			auto prevColor = line.empty() ? mPalette[(int) PaletteIndex::Default] : GetGlyphColor(line[0]);
+			ImVec2 bufferOffset;
 
 			for (auto& glyph : line)
 			{
-				auto color = glyph.mMultiLineComment ? PaletteIndex::MultiLineComment : glyph.mColorIndex;
+				auto color = GetGlyphColor(glyph);
 
 				if ((color != prevColor || glyph.mChar == '\t') && !buffer.empty())
 				{
 					const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-					drawList->AddText(newOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
+					drawList->AddText(newOffset, prevColor, buffer.c_str());
 					auto textSize = ImGui::CalcTextSize(buffer.c_str());
 					bufferOffset.x += textSize.x + 1.0f * fontScale;
 					buffer.clear();
@@ -771,7 +789,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			if (!buffer.empty())
 			{
 				const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-				drawList->AddText(newOffset, mPalette[(uint8_t)prevColor], buffer.c_str());
+				drawList->AddText(newOffset, prevColor, buffer.c_str());
 				buffer.clear();
 			}
 
@@ -1569,13 +1587,13 @@ void TextEditor::Redo(int aSteps)
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
 	static Palette p = { {
-		0xffffffff,	// None
+		0xff7f7f7f,	// Default
 		0xffd69c56,	// Keyword	
 		0xff00ff00,	// Number
 		0xff7070e0,	// String
 		0xff70a0e0, // Char literal
 		0xffffffff, // Punctuation
-		0xff409090,	// Preprocessor
+		0xff408080,	// Preprocessor
 		0xffaaaaaa, // Identifier
 		0xff9bc64d, // Known identifier
 		0xffc040a0, // Preproc identifier
@@ -1597,13 +1615,13 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
 	static Palette p = { {
-		0xff000000,	// None
+		0xff7f7f7f,	// None
 		0xffff0c06,	// Keyword	
 		0xff008000,	// Number
 		0xff2020a0,	// String
 		0xff304070, // Char literal
 		0xff000000, // Punctuation
-		0xff409090,	// Preprocessor
+		0xff406060,	// Preprocessor
 		0xff404040, // Identifier
 		0xff606010, // Known identifier
 		0xffc040a0, // Preproc identifier
@@ -1699,7 +1717,7 @@ void TextEditor::Colorize(int aFromLine, int aLines)
 	mColorRangeMax = std::max(mColorRangeMax, toLine);
 	mColorRangeMin = std::max(0, mColorRangeMin);
 	mColorRangeMax = std::max(mColorRangeMin, mColorRangeMax);
-	mCheckMultilineComments = true;
+	mCheckComments = true;
 }
 
 void TextEditor::ColorizeRange(int aFromLine, int aToLine)
@@ -1714,7 +1732,6 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 	int endLine = std::max(0, std::min((int)mLines.size(), aToLine));
 	for (int i = aFromLine; i < endLine; ++i)
 	{
-		bool preproc = false;
 		auto& line = mLines[i];
 		
 		if (line.empty())
@@ -1779,11 +1796,11 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 				{
 					id.assign(token_begin, token_end);
 					
-				// todo : allmost all language definitions use lower case to specify keywords, so shouldn't this use ::tolower ?
+					// todo : allmost all language definitions use lower case to specify keywords, so shouldn't this use ::tolower ?
 					if (!mLanguageDefinition.mCaseSensitive)
 						std::transform(id.begin(), id.end(), id.begin(), ::toupper);
 
-					if (!preproc)
+					if (!line[first - bufferBegin].mPreprocessor)
 					{
 						if (mLanguageDefinition.mKeywords.count(id) != 0)
 							token_color = PaletteIndex::Keyword;
@@ -1796,13 +1813,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 					{
 						if (mLanguageDefinition.mPreprocIdentifiers.count(id) != 0)
 							token_color = PaletteIndex::PreprocIdentifier;
-						else
-							token_color = PaletteIndex::Identifier;
 					}
-				}
-				else if (token_color == PaletteIndex::Preprocessor)
-				{
-					preproc = true;
 				}
 				
 				for (size_t j = 0; j < token_length; ++j)
@@ -1819,72 +1830,102 @@ void TextEditor::ColorizeInternal()
 	if (mLines.empty())
 		return;
 	
-	if (mCheckMultilineComments)
+	if (mCheckComments)
 	{
 		auto end = Coordinates((int)mLines.size(), 0);
 		auto commentStart = end;
 		auto withinString = false;
-		for (auto i = Coordinates(0, 0); i < end; Advance(i))
+		auto withinSingleLineComment = false;
+		auto withinPreproc = false;
+		auto firstChar = true;			// there is no other non-whitespace characters in the line before
+		auto concatenate = false;		// '\' on the very end of the line
+		
+		for (auto currentCoord = Coordinates(0, 0); currentCoord < end; Advance(currentCoord))
 		{
-			auto& line = mLines[i.mLine];
+			auto& line = mLines[currentCoord.mLine];
+
+			if (currentCoord.mColumn == 0 && !concatenate)
+			{
+				withinSingleLineComment = false;
+				withinPreproc = false;
+				firstChar = true;
+			}
+
+			concatenate = false;
+
 			if (!line.empty())
 			{
-				auto& g = line[i.mColumn];
+				auto& g = line[currentCoord.mColumn];
 				auto c = g.mChar;
 
-				bool inComment = commentStart <= i;
+				if (c != mLanguageDefinition.mPreprocChar && !isspace(c))
+					firstChar = false;
+
+				if (currentCoord.mColumn == line.size() - 1 && line[line.size() - 1].mChar == '\\')
+					concatenate = true;
+
+				bool inComment = commentStart <= currentCoord;
 
 				if (withinString)
 				{
-					line[i.mColumn].mMultiLineComment = inComment;
+					line[currentCoord.mColumn].mMultiLineComment = inComment;
 
 					if (c == '\"')
 					{
-						if (i.mColumn + 1 < (int)line.size() && line[i.mColumn + 1].mChar == '\"')
+						if (currentCoord.mColumn + 1 < (int)line.size() && line[currentCoord.mColumn + 1].mChar == '\"')
 						{
-							Advance(i);
-							if (i.mColumn < (int)line.size())
-								line[i.mColumn].mMultiLineComment = inComment;
+							Advance(currentCoord);
+							if (currentCoord.mColumn < (int)line.size())
+								line[currentCoord.mColumn].mMultiLineComment = inComment;
 						}
 						else
 							withinString = false;
 					}
 					else if (c == '\\')
 					{
-						Advance(i);
-						if (i.mColumn < (int)line.size())
-							line[i.mColumn].mMultiLineComment = inComment;
+						Advance(currentCoord);
+						if (currentCoord.mColumn < (int)line.size())
+							line[currentCoord.mColumn].mMultiLineComment = inComment;
 					}
 				}
 				else
 				{
+					if (firstChar && c == mLanguageDefinition.mPreprocChar)
+						withinPreproc = true;
+
 					if (c == '\"')
 					{
 						withinString = true;
-						line[i.mColumn].mMultiLineComment = inComment;
+						line[currentCoord.mColumn].mMultiLineComment = inComment;
 					}
 					else
 					{
 						auto pred = [](const char& a, const Glyph& b) { return a == b.mChar; };
-						auto from = line.begin() + i.mColumn;
+						auto from = line.begin() + currentCoord.mColumn;
 						auto& startStr = mLanguageDefinition.mCommentStart;
-						if (i.mColumn + startStr.size() <= line.size() &&
+						auto& singleStartStr = mLanguageDefinition.mSingleLineComment;
+						if (currentCoord.mColumn + singleStartStr.size() <= line.size() &&
+							equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.size(), pred))
+							withinSingleLineComment = true;
+						else if (!withinSingleLineComment && currentCoord.mColumn + startStr.size() <= line.size() &&
 							equals(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
-							commentStart = i;
+							commentStart = currentCoord;
 
-						inComment = commentStart <= i;
+						inComment = commentStart <= currentCoord;
 
-						line[i.mColumn].mMultiLineComment = inComment;
-						
+						line[currentCoord.mColumn].mMultiLineComment = inComment;
+						line[currentCoord.mColumn].mComment = withinSingleLineComment;
+
 						auto& endStr = mLanguageDefinition.mCommentEnd;
-						if (i.mColumn + 1 >= (int)endStr.size() &&
+						if (currentCoord.mColumn + 1 >= (int)endStr.size() &&
 							equals(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
 							commentStart = end;
 					}
 				}
+				line[currentCoord.mColumn].mPreprocessor = withinPreproc;
 			}
 		}
-		mCheckMultilineComments = false;
+		mCheckComments = false;
 		return;
 	}
 
@@ -2026,49 +2067,6 @@ void TextEditor::UndoRecord::Redo(TextEditor * aEditor)
 
 	aEditor->mState = mAfter;
 	aEditor->EnsureCursorVisible();
-}
-
-static bool TokenizeCStyleComment(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
-{
-	if (*in_begin != '/')
-		return false;
-	
-	if (in_begin + 1 < in_end && in_begin[1] == '/')
-	{
-		out_begin = in_begin;
-		out_end = in_end;
-		return true;
-	}
-	
-	return false;
-}
-
-static bool TokenizeCStylePreprocessorDirective(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
-{
-	if (*in_begin != '#')
-		return false;
-	
-	const char * p = in_begin + 1;
-	
-	while (p < in_end && isblank(*p))
-		p++;
-	
-	bool hasText = false;
-	
-	while (p < in_end && ((*p >= 'a' && *p <= 'z') || (*p >= 'A' && *p <= 'Z') || *p == '_'))
-	{
-		hasText = true;
-		p++;
-	}
-	
-	if (hasText)
-	{
-		out_begin = in_begin;
-		out_end = p;
-		return true;
-	}
-	
-	return false;
 }
 
 static bool TokenizeCStyleString(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end)
@@ -2329,10 +2327,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus(
 				out_end = in_end;
 				paletteIndex = PaletteIndex::Default;
 			}
-			else if (TokenizeCStyleComment(in_begin, in_end, out_begin, out_end))
-				paletteIndex = PaletteIndex::Comment;
-			else if (TokenizeCStylePreprocessorDirective(in_begin, in_end, out_begin, out_end))
-				paletteIndex = PaletteIndex::Preprocessor;
 			else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::String;
 			else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
@@ -2349,6 +2343,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus(
 		
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = true;
@@ -2408,7 +2403,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::HLSL()
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
@@ -2421,6 +2415,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::HLSL()
 
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = true;
@@ -2457,7 +2452,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::GLSL()
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[ \\t]*#[ \\t]*[a-zA-Z_]+", PaletteIndex::Preprocessor));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::CharLiteral));
@@ -2470,6 +2464,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::GLSL()
 
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = true;
@@ -2519,10 +2514,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::C()
 				out_end = in_end;
 				paletteIndex = PaletteIndex::Default;
 			}
-			else if (TokenizeCStyleComment(in_begin, in_end, out_begin, out_end))
-				paletteIndex = PaletteIndex::Comment;
-			else if (TokenizeCStylePreprocessorDirective(in_begin, in_end, out_begin, out_end))
-				paletteIndex = PaletteIndex::Preprocessor;
 			else if (TokenizeCStyleString(in_begin, in_end, out_begin, out_end))
 				paletteIndex = PaletteIndex::String;
 			else if (TokenizeCStyleCharacterLiteral(in_begin, in_end, out_begin, out_end))
@@ -2539,6 +2530,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::C()
 		
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = true;
@@ -2591,7 +2583,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::SQL()
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\-\\-.*", PaletteIndex::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\\'[^\\\']*\\\'", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
@@ -2603,6 +2594,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::SQL()
 
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = false;
 		langDef.mAutoIndentation = false;
@@ -2641,7 +2633,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::AngelScrip
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("//.*", PaletteIndex::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\'\\\\?[^\\']\\'", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?[fF]?", PaletteIndex::Number));
@@ -2653,6 +2644,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::AngelScrip
 
 		langDef.mCommentStart = "/*";
 		langDef.mCommentEnd = "*/";
+		langDef.mSingleLineComment = "//";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = true;
@@ -2696,7 +2688,6 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 			langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
 		}
 
-		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\-\\-.*", PaletteIndex::Comment));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("L?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("\\\'[^\\\']*\\\'", PaletteIndex::String));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[xX][0-9a-fA-F]+[uU]?[lL]?[lL]?", PaletteIndex::Number));
@@ -2705,8 +2696,8 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex::Identifier));
 		langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.]", PaletteIndex::Punctuation));
 
-		langDef.mCommentStart = "\\-\\-\\[\\[";
-		langDef.mCommentEnd = "\\]\\]";
+		langDef.mCommentStart = "--[[";
+		langDef.mCommentEnd = "]]";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = false;
