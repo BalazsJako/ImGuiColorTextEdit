@@ -24,7 +24,7 @@ The code is (still) work in progress, please report if you find any issues.
 # Known issues
  - syntax highligthing of most languages - except C/C++ - is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. C/C++ has a hand-written tokenizer which is much faster. 
  - 8 bit character only, no Unicode or Utf support
- - there's no find/replace support
+ - no find/replace support
 
 Don't forget to post your screenshots if you use this little piece of software in order to keep me us motivated. :)
 
