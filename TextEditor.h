@@ -181,7 +181,7 @@ public:
 	void SetLanguageDefinition(const LanguageDefinition& aLanguageDef);
 	const LanguageDefinition& GetLanguageDefinition() const { return mLanguageDefinition; }
 
-	const Palette& GetPalette() const { return mPalette; }
+	const Palette& GetPalette() const { return mPaletteBase; }
 	void SetPalette(const Palette& aValue);
 
 	void SetErrorMarkers(const ErrorMarkers& aMarkers) { mErrorMarkers = aMarkers; }
@@ -335,6 +335,7 @@ private:
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
 
+	Palette mPaletteBase;
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
 	RegexList mRegexList;
