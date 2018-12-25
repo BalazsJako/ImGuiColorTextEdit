@@ -942,19 +942,25 @@ void TextEditor::EnterCharacter(Char aChar, bool aShift)
 				auto& line = mLines[i];
 				if (aShift)
 				{
-					if (line[0].mChar == '\t')
+					if (line.empty() == false)
 					{
-						line.erase(line.begin());
-						if (i == end.mLine && end.mColumn > 0)
-							end.mColumn--;
-						modified = true;
+						if (line.front().mChar == '\t')
+						{
+							line.erase(line.begin());
+							if (i == end.mLine && end.mColumn > 0)
+								end.mColumn--;
+							modified = true;
+						}
 					}
-					else for (int j = 0; j < mTabSize && line[0].mChar == ' '; j++)
+					else
 					{
-						line.erase(line.begin());
-						if (i == end.mLine && end.mColumn > 0)
-							end.mColumn--;
-						modified = true;
+						for (int j = 0; j < mTabSize && line.empty() == false && line.front().mChar == ' '; j++)
+						{
+							line.erase(line.begin());
+							if (i == end.mLine && end.mColumn > 0)
+								end.mColumn--;
+							modified = true;
+						}
 					}
 				}
 				else
