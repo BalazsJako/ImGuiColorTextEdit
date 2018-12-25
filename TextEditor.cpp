@@ -62,7 +62,7 @@ void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
 
 void TextEditor::SetPalette(const Palette & aValue)
 {
-	mPalette = aValue;
+	mPaletteBase = aValue;
 }
 
 int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex)
@@ -614,6 +614,14 @@ void TextEditor::Render()
 	const float fontSize = ImGui::CalcTextSize("#").x;
 	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
 
+	/* Update palette with the current alpha from style */
+	for (int i = 0; i < (int)PaletteIndex::Max; ++i)
+	{
+		auto color = ImGui::ColorConvertU32ToFloat4(mPaletteBase[i]);
+		color.w *= ImGui::GetStyle().Alpha;
+		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
+	}
+	
 	static std::string buffer;
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
