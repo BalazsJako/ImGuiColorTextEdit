@@ -34,6 +34,7 @@ TextEditor::TextEditor()
 	, mReadOnly(false)
 	, mWithinRender(false)
 	, mScrollToCursor(false)
+	, mScrollToTop(false)
 	, mTextChanged(false)
 	, mTextStart(20.0f)
 	, mLeftMargin(10)
@@ -628,6 +629,12 @@ void TextEditor::Render()
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
 	float longest(mTextStart);
+	
+	if (mScrollToTop)
+	{
+		mScrollToTop = false;
+		ImGui::SetScrollY(0.f);
+	}
 
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
 	auto scrollX = ImGui::GetScrollX();
@@ -857,9 +864,10 @@ void TextEditor::SetText(const std::string & aText)
 		{
 			mLines.back().emplace_back(Glyph(chr, PaletteIndex::Default));
 		}
-
-		mTextChanged = true;
 	}
+	
+	mTextChanged = true;
+	mScrollToTop = true;
 
 	mUndoBuffer.clear();
 	mUndoIndex = 0;
@@ -890,6 +898,7 @@ void TextEditor::SetTextLines(const std::vector<std::string> & aLines)
 	}
 
 	mTextChanged = true;
+	mScrollToTop = true;
 
 	mUndoBuffer.clear();
 	mUndoIndex = 0;

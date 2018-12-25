@@ -328,6 +328,7 @@ private:
 	bool mReadOnly;
 	bool mWithinRender;
 	bool mScrollToCursor;
+	bool mScrollToTop;
 	bool mTextChanged;
 	float  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
 	int  mLeftMargin;
