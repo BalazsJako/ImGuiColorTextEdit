@@ -315,6 +315,7 @@ private:
 
 	void HandleKeyboardInputs();
 	void HandleMouseInputs();
+	void UpdatePalette();
 	void Render();
 
 	float mLineSpacing;
