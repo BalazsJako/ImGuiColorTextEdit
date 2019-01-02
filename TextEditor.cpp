@@ -34,6 +34,7 @@ TextEditor::TextEditor()
 	, mReadOnly(false)
 	, mWithinRender(false)
 	, mScrollToCursor(false)
+	, mScrollToTop(false)
 	, mTextChanged(false)
 	, mTextStart(20.0f)
 	, mLeftMargin(10)
@@ -63,7 +64,7 @@ void TextEditor::SetLanguageDefinition(const LanguageDefinition & aLanguageDef)
 
 void TextEditor::SetPalette(const Palette & aValue)
 {
-	mPalette = aValue;
+	mPaletteBase = aValue;
 }
 
 int TextEditor::AppendBuffer(std::string& aBuffer, char chr, int aIndex)
@@ -515,6 +516,8 @@ void TextEditor::HandleKeyboardInputs()
 			SelectAll();
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
 			EnterCharacter('\n', false);
+		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
+			EnterCharacter('\t', shift);
 		else if (!IsReadOnly() && !ctrl && !alt)
 		{
 			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
@@ -614,10 +617,24 @@ void TextEditor::Render()
 	const float fontSize = ImGui::CalcTextSize("#").x;
 	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
 
+	/* Update palette with the current alpha from style */
+	for (int i = 0; i < (int)PaletteIndex::Max; ++i)
+	{
+		auto color = ImGui::ColorConvertU32ToFloat4(mPaletteBase[i]);
+		color.w *= ImGui::GetStyle().Alpha;
+		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
+	}
+	
 	static std::string buffer;
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
 	float longest(mTextStart);
+	
+	if (mScrollToTop)
+	{
+		mScrollToTop = false;
+		ImGui::SetScrollY(0.f);
+	}
 
 	ImVec2 cursorScreenPos = ImGui::GetCursorScreenPos();
 	auto scrollX = ImGui::GetScrollX();
@@ -847,11 +864,13 @@ void TextEditor::SetText(const std::string & aText)
 		{
 			mLines.back().emplace_back(Glyph(chr, PaletteIndex::Default));
 		}
-
-		mTextChanged = true;
 	}
+	
+	mTextChanged = true;
+	mScrollToTop = true;
 
 	mUndoBuffer.clear();
+	mUndoIndex = 0;
 
 	Colorize();
 }
@@ -879,8 +898,10 @@ void TextEditor::SetTextLines(const std::vector<std::string> & aLines)
 	}
 
 	mTextChanged = true;
+	mScrollToTop = true;
 
 	mUndoBuffer.clear();
+	mUndoIndex = 0;
 
 	Colorize();
 }
@@ -921,19 +942,25 @@ void TextEditor::EnterCharacter(Char aChar, bool aShift)
 				auto& line = mLines[i];
 				if (aShift)
 				{
-					if (line[0].mChar == '\t')
+					if (line.empty() == false)
 					{
-						line.erase(line.begin());
-						if (i == end.mLine && end.mColumn > 0)
-							end.mColumn--;
-						modified = true;
+						if (line.front().mChar == '\t')
+						{
+							line.erase(line.begin());
+							if (i == end.mLine && end.mColumn > 0)
+								end.mColumn--;
+							modified = true;
+						}
 					}
-					else for (int j = 0; j < mTabSize && line[0].mChar == ' '; j++)
+					else
 					{
-						line.erase(line.begin());
-						if (i == end.mLine && end.mColumn > 0)
-							end.mColumn--;
-						modified = true;
+						for (int j = 0; j < mTabSize && line.empty() == false && line.front().mChar == ' '; j++)
+						{
+							line.erase(line.begin());
+							if (i == end.mLine && end.mColumn > 0)
+								end.mColumn--;
+							modified = true;
+						}
 					}
 				}
 				else
