@@ -626,6 +626,8 @@ void TextEditor::Render()
 	}
 	
 	static std::string buffer;
+	assert(buffer.empty());
+	
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
 	float longest(mTextStart);
@@ -1604,7 +1606,7 @@ void TextEditor::Redo(int aSteps)
 
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
-	static Palette p = { {
+	const static Palette p = { {
 		0xff7f7f7f,	// Default
 		0xffd69c56,	// Keyword	
 		0xff00ff00,	// Number
@@ -1632,7 +1634,7 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
-	static Palette p = { {
+	const static Palette p = { {
 		0xff7f7f7f,	// None
 		0xffff0c06,	// Keyword	
 		0xff008000,	// Number
@@ -1660,7 +1662,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 
 const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 {
-	static Palette p = { {
+	const static Palette p = { {
 		0xff00ffff,	// None
 		0xffffff00,	// Keyword	
 		0xff00ff00,	// Number
