@@ -2718,6 +2718,7 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Lua()
 
 		langDef.mCommentStart = "--[[";
 		langDef.mCommentEnd = "]]";
+		langDef.mSingleLineComment = "--";
 
 		langDef.mCaseSensitive = true;
 		langDef.mAutoIndentation = false;
