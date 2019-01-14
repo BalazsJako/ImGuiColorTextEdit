@@ -1924,7 +1924,8 @@ void TextEditor::ColorizeInternal()
 						auto from = line.begin() + currentCoord.mColumn;
 						auto& startStr = mLanguageDefinition.mCommentStart;
 						auto& singleStartStr = mLanguageDefinition.mSingleLineComment;
-						if (currentCoord.mColumn + singleStartStr.size() <= line.size() &&
+						if (singleStartStr.size() > 0 &&
+							currentCoord.mColumn + singleStartStr.size() <= line.size() &&
 							equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.size(), pred))
 							withinSingleLineComment = true;
 						else if (!withinSingleLineComment && currentCoord.mColumn + startStr.size() <= line.size() &&
