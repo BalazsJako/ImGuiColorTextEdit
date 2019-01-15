@@ -162,7 +162,7 @@ public:
 		bool mCaseSensitive;
 		
 		LanguageDefinition()
-			: mTokenize(nullptr), mPreprocChar('#'), mAutoIndentation(true), mCaseSensitive(true)
+			: mPreprocChar('#'), mAutoIndentation(true), mTokenize(nullptr), mCaseSensitive(true)
 		{
 		}
 		
