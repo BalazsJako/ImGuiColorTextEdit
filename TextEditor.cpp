@@ -520,9 +520,9 @@ void TextEditor::HandleKeyboardInputs()
 			EnterCharacter('\t', shift);
 		else if (!IsReadOnly() && !ctrl && !alt)
 		{
-			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
+			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
 			{
-				auto c = (unsigned char)io.InputCharacters[i];
+				auto c = (unsigned char)io.InputQueueCharacters[i];
 				if (c != 0)
 				{
 					if (isprint(c) || isspace(c))
@@ -531,6 +531,7 @@ void TextEditor::HandleKeyboardInputs()
 					}
 				}
 			}
+			io.InputQueueCharacters.resize(0);
 		}
 	}
 }
