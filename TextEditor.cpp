@@ -518,7 +518,7 @@ void TextEditor::HandleKeyboardInputs()
 			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
 			EnterCharacter('\t', shift);
-		else if (!IsReadOnly() && !ctrl && !alt)
+		else if (!IsReadOnly() && !ctrl)
 		{
 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
 			{
