@@ -1954,7 +1954,6 @@ void TextEditor::ColorizeInternal()
 			}
 		}
 		mCheckComments = false;
-		return;
 	}
 
 	if (mColorRangeMin < mColorRangeMax)
