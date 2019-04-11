@@ -935,6 +935,9 @@ void TextEditor::EnterCharacter(Char aChar, bool aShift)
 				end.mColumn = (int)mLines[end.mLine].size();
 			}
 
+			if (end.mColumn >= (int)mLines[end.mLine].size())
+				end.mColumn = (int)mLines[end.mLine].size() - 1;
+
 			u.mRemovedStart = start;
 			u.mRemovedEnd = end;
 			u.mRemoved = GetText(start, end);
@@ -978,6 +981,8 @@ void TextEditor::EnterCharacter(Char aChar, bool aShift)
 
 			if (modified)
 			{
+				assert(mLines.size() > start.mLine && mLines[start.mLine].size() > start.mColumn);
+				assert(mLines.size() > end.mLine && mLines[end.mLine].size() > end.mColumn);
 				u.mAddedStart = start;
 				u.mAddedEnd = end;
 				u.mAdded = GetText(start, end);
