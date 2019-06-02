@@ -45,6 +45,7 @@ TextEditor::TextEditor()
 	, mLastClick(-1.0f)
 	, mHandleKeyboardInputs(true)
 	, mHandleMouseInputs(true)
+	, mIgnoreImGuiChild(false)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -838,7 +839,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
+	if( !mIgnoreImGuiChild)
+		ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
 	
 	if (mHandleKeyboardInputs) {
 		HandleKeyboardInputs();
@@ -852,6 +854,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	if (mHandleKeyboardInputs) ImGui::PopAllowKeyboardFocus();
 
+	if( !mIgnoreImGuiChild) ImGui::EndChild();
 	ImGui::PopStyleVar();
 	ImGui::PopStyleColor();
 

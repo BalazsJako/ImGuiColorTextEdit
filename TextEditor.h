@@ -208,6 +208,8 @@ public:
 
 	void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
 	void SetHandleKeyboardInputs (bool aValue){ mHandleKeyboardInputs = aValue;}
+	void SetImGuiChildIgnored    (bool aValue){ mIgnoreImGuiChild     = aValue;}
+
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
 
@@ -339,6 +341,7 @@ private:
 	SelectionMode mSelectionMode;
 	bool mHandleKeyboardInputs;
 	bool mHandleMouseInputs;
+	bool mIgnoreImGuiChild;
 
 	Palette mPaletteBase;
 	Palette mPalette;
