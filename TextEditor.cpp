@@ -43,6 +43,7 @@ TextEditor::TextEditor()
 	, mSelectionMode(SelectionMode::Normal)
 	, mCheckComments(true)
 	, mLastClick(-1.0f)
+	, mHandleMouseInputs(true)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -839,8 +840,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
 	ImGui::PushAllowKeyboardFocus(true);
 
-	HandleKeyboardInputs();
-	HandleMouseInputs();
+	if( mHandleMouseInputs)    HandleMouseInputs();
+
 	ColorizeInternal();
 	Render();
 
