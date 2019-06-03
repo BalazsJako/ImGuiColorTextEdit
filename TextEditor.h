@@ -57,7 +57,14 @@ public:
 			, mEnabled(false)
 		{}
 	};
-	
+
+	// Represents a character coordinate from the user's point of view,
+	// i. e. consider an uniform grid (assuming fixed-width font) on the
+	// screen as it is rendered, and each cell has its own coordinate, starting from 0.
+	// Tabs are counted as [1..mTabSize] count empty spaces, depending on
+	// how many space is necessary to reach the next tab stop.
+	// For example, coordinate (1, 5) represents the character 'B' in a line "\tABC", when mTabSize = 4,
+	// because it is rendered as "    ABC" on the screen.
 	struct Coordinates
 	{
 		int mLine, mColumn;
@@ -124,8 +131,8 @@ public:
 	typedef std::map<int, std::string> ErrorMarkers;
 	typedef std::unordered_set<int> Breakpoints;
 	typedef std::array<ImU32, (unsigned)PaletteIndex::Max> Palette;
-	typedef char Char;
-	
+	typedef uint8_t Char;
+
 	struct Glyph
 	{
 		Char mChar;
@@ -134,7 +141,7 @@ public:
 		bool mMultiLineComment : 1;
 		bool mPreprocessor : 1;
 
-		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex), 
+		Glyph(Char aChar, PaletteIndex aColorIndex) : mChar(aChar), mColorIndex(aColorIndex),
 			mComment(false), mMultiLineComment(false), mPreprocessor(false) {}
 	};
 
@@ -145,7 +152,7 @@ public:
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
-		typedef bool (*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
+		typedef bool(*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
 		std::string mName;
 		Keywords mKeywords;
@@ -160,12 +167,12 @@ public:
 		TokenRegexStrings mTokenRegexStrings;
 
 		bool mCaseSensitive;
-		
+
 		LanguageDefinition()
 			: mPreprocChar('#'), mAutoIndentation(true), mTokenize(nullptr), mCaseSensitive(true)
 		{
 		}
-		
+
 		static const LanguageDefinition& CPlusPlus();
 		static const LanguageDefinition& HLSL();
 		static const LanguageDefinition& GLSL();
@@ -194,7 +201,7 @@ public:
 	std::vector<std::string> GetTextLines() const;
 	std::string GetSelectedText() const;
 	std::string GetCurrentLineText()const;
-	
+
 	int GetTotalLines() const { return (int)mLines.size(); }
 	bool IsOverwrite() const { return mOverwrite; }
 
@@ -203,12 +210,20 @@ public:
 	bool IsTextChanged() const { return mTextChanged; }
 	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
 
+	bool IsColorizerEnabled() const { return mColorizerEnabled; }
+	void SetColorizerEnable(bool aValue);
+
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
 
-	void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
-	void SetHandleKeyboardInputs (bool aValue){ mHandleKeyboardInputs = aValue;}
-	void SetImGuiChildIgnored    (bool aValue){ mIgnoreImGuiChild     = aValue;}
+	inline void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
+	inline bool IsHandleMouseInputsEnabled() const { return mHandleKeyboardInputs; }
+
+	inline void SetHandleKeyboardInputs (bool aValue){ mHandleKeyboardInputs = aValue;}
+	inline bool IsHandleKeyboardInputsEnabled() const { return mHandleKeyboardInputs; }
+
+	inline void SetImGuiChildIgnored    (bool aValue){ mIgnoreImGuiChild     = aValue;}
+	inline bool IsImGuiChildIgnored() const { return mIgnoreImGuiChild; }
 
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
@@ -261,14 +276,14 @@ private:
 
 		UndoRecord(
 			const std::string& aAdded,
-			const TextEditor::Coordinates aAddedStart, 
-			const TextEditor::Coordinates aAddedEnd, 
-			
-			const std::string& aRemoved, 
+			const TextEditor::Coordinates aAddedStart,
+			const TextEditor::Coordinates aAddedEnd,
+
+			const std::string& aRemoved,
 			const TextEditor::Coordinates aRemovedStart,
 			const TextEditor::Coordinates aRemovedEnd,
-			
-			TextEditor::EditorState& aBefore, 
+
+			TextEditor::EditorState& aBefore,
 			TextEditor::EditorState& aAfter);
 
 		void Undo(TextEditor* aEditor);
@@ -295,7 +310,6 @@ private:
 	float TextDistanceToLineStart(const Coordinates& aFrom) const;
 	void EnsureCursorVisible();
 	int GetPageSize() const;
-	int AppendBuffer(std::string& aBuffer, char chr, int aIndex);
 	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
 	Coordinates GetActualCursorCoordinates() const;
 	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
@@ -306,12 +320,16 @@ private:
 	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition) const;
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
+	int GetCharacterIndex(const Coordinates& aCoordinates) const;
+	int GetCharacterColumn(int aLine, int aIndex) const;
+	int GetLineCharacterCount(int aLine) const;
+	int GetLineMaxColumn(int aLine) const;
 	bool IsOnWordBoundary(const Coordinates& aAt) const;
 	void RemoveLine(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
-	void EnterCharacter(Char aChar, bool aShift);
-	void BackSpace();
+	void EnterCharacter(ImWchar aChar, bool aShift);
+	void Backspace();
 	void DeleteSelection();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
@@ -326,7 +344,7 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
-	
+
 	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;
@@ -334,6 +352,7 @@ private:
 	bool mScrollToCursor;
 	bool mScrollToTop;
 	bool mTextChanged;
+	bool mColorizerEnabled;
 	float  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
 	int  mLeftMargin;
 	bool mCursorPositionChanged;
@@ -353,6 +372,6 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
-	
+
 	float mLastClick;
 };
