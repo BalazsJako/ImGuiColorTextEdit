@@ -346,7 +346,7 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 				auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
 				float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 				float oldX = columnX;
-				columnX = (1.0f * fontScale + std::floor((1.0f + columnX)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+				columnX = (1.0f * fontScale + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 				columnWidth = columnX - oldX;
 				columnCoord++;
 			}
@@ -912,11 +912,11 @@ void TextEditor::Render()
 			auto lineNoWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf, nullptr, nullptr).x;
 			drawList->AddText(ImVec2(lineStartScreenPos.x + mTextStart - lineNoWidth, lineStartScreenPos.y), mPalette[(int)PaletteIndex::LineNumber], buf);
 
-			// Highlight the current line (where the cursor is)
 			if (mState.mCursorPosition.mLine == lineNo)
 			{
 				auto focused = ImGui::IsWindowFocused();
 
+				// Highlight the current line (where the cursor is)
 				if (!HasSelection())
 				{
 					auto end = ImVec2(start.x + contentSize.x + scrollX, start.y + mCharAdvance.y);
@@ -924,8 +924,7 @@ void TextEditor::Render()
 					drawList->AddRect(start, end, mPalette[(int)PaletteIndex::CurrentLineEdge], 1.0f);
 				}
 
-				float cx = TextDistanceToLineStart(mState.mCursorPosition);
-
+				// Render the cursor
 				if (focused)
 				{
 					static auto timeStart = std::chrono::system_clock::now();
@@ -934,8 +933,28 @@ void TextEditor::Render()
 					auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
 					if (elapsed > 400)
 					{
+						float width = 1.0f;
+						auto cindex = GetCharacterIndex(mState.mCursorPosition);
+						float cx = TextDistanceToLineStart(mState.mCursorPosition);
+
+						if (mOverwrite && cindex < (int)line.size())
+						{
+							auto c = line[cindex].mChar;
+							if (c == '\t')
+							{
+								auto x = (1.0f * fontScale + std::floor((1.0f + cx) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+								width = x - cx;
+							}
+							else
+							{
+								char buf[2];
+								buf[0] = line[cindex].mChar;
+								buf[1] = '\0';
+								width = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf).x;
+							}
+						}
 						ImVec2 cstart(textScreenPos.x + cx, lineStartScreenPos.y);
-						ImVec2 cend(textScreenPos.x + cx + (mOverwrite ? mCharAdvance.x : 1.0f), lineStartScreenPos.y + mCharAdvance.y);
+						ImVec2 cend(textScreenPos.x + cx + width, lineStartScreenPos.y + mCharAdvance.y);
 						drawList->AddRectFilled(cstart, cend, mPalette[(int)PaletteIndex::Cursor]);
 						if (elapsed > 800)
 							timeStart = timeEnd;
@@ -2323,7 +2342,7 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 	{
 		if (line[it].mChar == '\t')
 		{
-			distance = (1.0f * fontScale + std::floor((1.0f + distance)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+			distance = (1.0f * fontScale + std::floor((1.0f + distance) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 			++it;
 		}
 		else
