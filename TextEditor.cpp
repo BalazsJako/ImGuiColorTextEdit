@@ -1852,6 +1852,9 @@ void TextEditor::Cut()
 
 void TextEditor::Paste()
 {
+	if (IsReadOnly())
+		return;
+
 	auto clipText = ImGui::GetClipboardText();
 	if (clipText != nullptr && strlen(clipText) > 0)
 	{
@@ -1879,12 +1882,12 @@ void TextEditor::Paste()
 
 bool TextEditor::CanUndo() const
 {
-	return mUndoIndex > 0;
+	return !mReadOnly && mUndoIndex > 0;
 }
 
 bool TextEditor::CanRedo() const
 {
-	return mUndoIndex < (int)mUndoBuffer.size();
+	return !mReadOnly && mUndoIndex < (int)mUndoBuffer.size();
 }
 
 void TextEditor::Undo(int aSteps)
