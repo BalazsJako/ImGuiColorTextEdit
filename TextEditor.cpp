@@ -46,6 +46,7 @@ TextEditor::TextEditor()
 	, mHandleKeyboardInputs(true)
 	, mHandleMouseInputs(true)
 	, mIgnoreImGuiChild(false)
+	, mShowWhitespaces(true)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -715,13 +716,8 @@ void TextEditor::HandleKeyboardInputs()
 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
 			{
 				auto c = io.InputQueueCharacters[i];
-				if (c != 0)
-				{
-					if (c == '\t' || c == '\n' || c >= 32)
-					{
-						EnterCharacter(c, shift);
-					}
-				}
+				if (c != 0 && (c == '\n' || c >= 32))
+					EnterCharacter(c, shift);
 			}
 			io.InputQueueCharacters.resize(0);
 		}
@@ -956,7 +952,7 @@ void TextEditor::Render()
 				auto& glyph = line[i];
 				auto color = GetGlyphColor(glyph);
 
-				if ((color != prevColor || glyph.mChar == '\t') && !buffer.empty())
+				if ((color != prevColor || glyph.mChar == '\t' || glyph.mChar == ' ') && !buffer.empty())
 				{
 					const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
 					drawList->AddText(newOffset, prevColor, buffer.c_str());
@@ -968,8 +964,36 @@ void TextEditor::Render()
 
 				if (glyph.mChar == '\t')
 				{
-					bufferOffset.x = (1.0f * fontScale + std::floor((1.0f + bufferOffset.x)) / (float(mTabSize) * spaceSize)) * (float(mTabSize) * spaceSize);
+					auto oldX = bufferOffset.x;
+					bufferOffset.x = (1.0f * fontScale + std::floor((1.0f + bufferOffset.x) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 					++i;
+
+					if (mShowWhitespaces)
+					{
+						const auto s = ImGui::GetFontSize() * fontScale;
+						const auto x1 = textScreenPos.x + oldX + 1.0f;
+						const auto x2 = textScreenPos.x + bufferOffset.x - 1.0f;
+						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
+						const ImVec2 p1(x1, y);
+						const ImVec2 p2(x2, y);
+						const ImVec2 p3(x2 - s * 0.2f, y - s * 0.2f);
+						const ImVec2 p4(x2 - s * 0.2f, y + s * 0.2f);
+						drawList->AddLine(p1, p2, 0x90909090);
+						drawList->AddLine(p2, p3, 0x90909090);
+						drawList->AddLine(p2, p4, 0x90909090);
+					}
+				}
+				else if (glyph.mChar == ' ')
+				{
+					if (mShowWhitespaces)
+					{
+						const auto s = ImGui::GetFontSize() * fontScale;
+						const auto x = textScreenPos.x + bufferOffset.x + spaceSize * 0.5f;
+						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
+						drawList->AddCircleFilled(ImVec2(x, y), 1.5f, 0x80808080, 4);
+					}
+					bufferOffset.x += spaceSize;
+					i++;
 				}
 				else
 				{

@@ -225,6 +225,9 @@ public:
 	inline void SetImGuiChildIgnored    (bool aValue){ mIgnoreImGuiChild     = aValue;}
 	inline bool IsImGuiChildIgnored() const { return mIgnoreImGuiChild; }
 
+	inline void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
+	inline bool IsShowingWhitespaces() const { return mShowWhitespaces; }
+
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
 
@@ -361,6 +364,7 @@ private:
 	bool mHandleKeyboardInputs;
 	bool mHandleMouseInputs;
 	bool mIgnoreImGuiChild;
+	bool mShowWhitespaces;
 
 	Palette mPaletteBase;
 	Palette mPalette;

@@ -31,3 +31,4 @@
 *.out
 *.app
 TextEditor.cpp.bak
+*.bak
