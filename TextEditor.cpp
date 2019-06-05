@@ -439,6 +439,52 @@ TextEditor::Coordinates TextEditor::FindWordEnd(const Coordinates & aFrom) const
 	return Coordinates(aFrom.mLine, GetCharacterColumn(aFrom.mLine, cindex));
 }
 
+TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) const
+{
+	Coordinates at = aFrom;
+	if (at.mLine >= (int)mLines.size())
+		return at;
+
+	// skip to the next non-word character
+	auto cindex = GetCharacterIndex(aFrom);
+	bool isword = false;
+	bool skip = false;
+	if (cindex < (int)mLines[at.mLine].size())
+	{
+		auto& line = mLines[at.mLine];
+		isword = isalnum(line[cindex].mChar);
+		skip = isword;
+	}
+
+	while (!isword || skip)
+	{
+		if (at.mLine >= mLines.size())
+			return Coordinates(std::max(0, (int)mLines.size() - 1), 0);
+
+		auto& line = mLines[at.mLine];
+		if (cindex < (int)line.size())
+		{
+			isword = isalnum(line[cindex].mChar);
+
+			if (isword && !skip)
+				return Coordinates(at.mLine, GetCharacterColumn(at.mLine, cindex));
+
+			if (!isword)
+				skip = false;
+
+			cindex++;
+		}
+		else
+		{
+			cindex = 0;
+			++at.mLine;
+			skip = false;
+		}
+	}
+
+	return Coordinates(std::max(0, (int)mLines.size() - 1), 0);
+}
+
 int TextEditor::GetCharacterIndex(const Coordinates& aCoordinates) const
 {
 	if (aCoordinates.mLine >= mLines.size())
@@ -710,7 +756,7 @@ void TextEditor::HandleKeyboardInputs()
 			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
 			EnterCharacter('\t', shift);
-		
+
 		if (!IsReadOnly() && !io.InputQueueCharacters.empty())
 		{
 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
@@ -1079,16 +1125,16 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 
 	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
-	if( !mIgnoreImGuiChild)
+	if (!mIgnoreImGuiChild)
 		ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
-	
-	if (mHandleKeyboardInputs) 
+
+	if (mHandleKeyboardInputs)
 	{
 		HandleKeyboardInputs();
 		ImGui::PushAllowKeyboardFocus(true);
 	}
 
-	if( mHandleMouseInputs)    
+	if (mHandleMouseInputs)
 		HandleMouseInputs();
 
 	ColorizeInternal();
@@ -1097,7 +1143,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	if (mHandleKeyboardInputs)
 		ImGui::PopAllowKeyboardFocus();
 
-	if(!mIgnoreImGuiChild)
+	if (!mIgnoreImGuiChild)
 		ImGui::EndChild();
 
 	ImGui::PopStyleVar();
@@ -1188,7 +1234,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 			if (end.mColumn == 0 && end.mLine > 0)
 				--end.mLine;
 			if (end.mLine >= (int)mLines.size())
-				end.mLine = mLines.empty() ? 0 : (int) mLines.size() - 1;
+				end.mLine = mLines.empty() ? 0 : (int)mLines.size() - 1;
 			end.mColumn = GetLineMaxColumn(end.mLine);
 
 			//if (end.mColumn >= GetLineMaxColumn(end.mLine))
@@ -1290,7 +1336,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 		newLine.insert(newLine.end(), line.begin() + cindex, line.end());
 		line.erase(line.begin() + cindex, line.begin() + line.size());
 		SetCursorPosition(Coordinates(coord.mLine + 1, GetCharacterColumn(coord.mLine + 1, (int)whitespaceSize)));
-		u.mAdded = (char) aChar;
+		u.mAdded = (char)aChar;
 	}
 	else
 	{
@@ -1309,13 +1355,13 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 				u.mRemovedStart = mState.mCursorPosition;
 				u.mRemovedEnd = Coordinates(coord.mLine, GetCharacterColumn(coord.mLine, cindex + d));
 
-				while (d-- > 0 && cindex < (int) line.size())
+				while (d-- > 0 && cindex < (int)line.size())
 				{
 					u.mRemoved += line[cindex].mChar;
 					line.erase(line.begin() + cindex);
 				}
 			}
-			
+
 			for (auto p = buf; *p != '\0'; p++, ++cindex)
 				line.insert(line.begin() + cindex, Glyph(*p, PaletteIndex::Default));
 			u.mAdded = buf;
@@ -1591,7 +1637,7 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 		{
 			mState.mCursorPosition.mColumn = std::max(0, std::min(chars, mState.mCursorPosition.mColumn + 1));
 			if (aWordMode)
-				mState.mCursorPosition = FindWordEnd(mState.mCursorPosition);
+				mState.mCursorPosition = FindNextWord(mState.mCursorPosition);
 		}
 	}
 
@@ -2350,7 +2396,7 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 			auto d = UTF8CharLength(line[it].mChar);
 			char tempCString[7];
 			int i = 0;
-			for (; i < 6 && d-- > 0 && it < (int) line.size(); i++, it++)
+			for (; i < 6 && d-- > 0 && it < (int)line.size(); i++, it++)
 				tempCString[i] = line[it].mChar;
 
 			tempCString[i] = '\0';
