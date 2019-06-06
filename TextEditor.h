@@ -196,9 +196,11 @@ public:
 
 	void Render(const char* aTitle, const ImVec2& aSize = ImVec2(), bool aBorder = false);
 	void SetText(const std::string& aText);
-	void SetTextLines(const std::vector<std::string>& aLines);
 	std::string GetText() const;
+
+	void SetTextLines(const std::vector<std::string>& aLines);
 	std::vector<std::string> GetTextLines() const;
+
 	std::string GetSelectedText() const;
 	std::string GetCurrentLineText()const;
 
@@ -227,6 +229,9 @@ public:
 
 	inline void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
 	inline bool IsShowingWhitespaces() const { return mShowWhitespaces; }
+
+	void SetTabSize(int aValue);
+	inline int GetTabSize() const { return mTabSize; }
 
 	void InsertText(const std::string& aValue);
 	void InsertText(const char* aValue);
@@ -357,7 +362,7 @@ private:
 	bool mScrollToTop;
 	bool mTextChanged;
 	bool mColorizerEnabled;
-	float  mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
+	float mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
 	int  mLeftMargin;
 	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;

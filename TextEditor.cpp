@@ -1459,6 +1459,11 @@ void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aE
 		mCursorPositionChanged = true;
 }
 
+void TextEditor::SetTabSize(int aValue)
+{
+	mTabSize = std::max(0, std::min(32, aValue));
+}
+
 void TextEditor::InsertText(const std::string & aValue)
 {
 	InsertText(aValue.c_str());
