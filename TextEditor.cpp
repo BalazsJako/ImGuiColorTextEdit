@@ -459,7 +459,10 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 	while (!isword || skip)
 	{
 		if (at.mLine >= mLines.size())
-			return Coordinates(std::max(0, (int)mLines.size() - 1), 0);
+		{
+			auto l = std::max(0, (int) mLines.size() - 1);
+			return Coordinates(l, GetLineMaxColumn(l));
+		}
 
 		auto& line = mLines[at.mLine];
 		if (cindex < (int)line.size())
