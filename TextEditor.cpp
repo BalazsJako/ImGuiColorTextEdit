@@ -482,10 +482,11 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 			cindex = 0;
 			++at.mLine;
 			skip = false;
+			isword = false;
 		}
 	}
 
-	return Coordinates(std::max(0, (int)mLines.size() - 1), 0);
+	return at;
 }
 
 int TextEditor::GetCharacterIndex(const Coordinates& aCoordinates) const
@@ -1622,23 +1623,29 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 {
 	auto oldPos = mState.mCursorPosition;
 
-	if (mLines.empty())
+	if (mLines.empty() || oldPos.mLine >= mLines.size())
 		return;
 
+	auto cindex = GetCharacterIndex(mState.mCursorPosition);
 	while (aAmount-- > 0)
 	{
-		auto chars = GetLineMaxColumn(mState.mCursorPosition.mLine);
-		if (mState.mCursorPosition.mColumn >= chars)
+		auto lindex = mState.mCursorPosition.mLine;
+		auto& line = mLines[lindex];
+
+		if (cindex >= line.size())
 		{
 			if (mState.mCursorPosition.mLine < mLines.size() - 1)
 			{
 				mState.mCursorPosition.mLine = std::max(0, std::min((int)mLines.size() - 1, mState.mCursorPosition.mLine + 1));
 				mState.mCursorPosition.mColumn = 0;
 			}
+			else
+				return;
 		}
 		else
 		{
-			mState.mCursorPosition.mColumn = std::max(0, std::min(chars, mState.mCursorPosition.mColumn + 1));
+			cindex += UTF8CharLength(line[cindex].mChar);
+			mState.mCursorPosition = Coordinates(lindex, GetCharacterColumn(lindex, cindex));
 			if (aWordMode)
 				mState.mCursorPosition = FindNextWord(mState.mCursorPosition);
 		}
