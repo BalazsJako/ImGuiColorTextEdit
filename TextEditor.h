@@ -382,6 +382,8 @@ private:
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
 	Coordinates mInteractiveStart, mInteractiveEnd;
+	std::string mLineBuffer;
+	uint64_t mStartTime;
 
 	float mLastClick;
 };

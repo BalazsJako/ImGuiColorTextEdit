@@ -47,6 +47,7 @@ TextEditor::TextEditor()
 	, mHandleMouseInputs(true)
 	, mIgnoreImGuiChild(false)
 	, mShowWhitespaces(true)
+	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -863,8 +864,7 @@ void TextEditor::Render()
 		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
 	}
 
-	static std::string buffer;
-	assert(buffer.empty());
+	assert(mLineBuffer.empty());
 
 	auto contentSize = ImGui::GetWindowContentRegionMax();
 	auto drawList = ImGui::GetWindowDrawList();
@@ -975,10 +975,8 @@ void TextEditor::Render()
 				// Render the cursor
 				if (focused)
 				{
-					static auto timeStart = std::chrono::system_clock::now();
-					auto timeEnd = std::chrono::system_clock::now();
-					auto diff = timeEnd - timeStart;
-					auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(diff).count();
+					auto timeEnd = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+					auto elapsed = timeEnd - mStartTime;
 					if (elapsed > 400)
 					{
 						float width = 1.0f;
@@ -1005,7 +1003,7 @@ void TextEditor::Render()
 						ImVec2 cend(textScreenPos.x + cx + width, lineStartScreenPos.y + mCharAdvance.y);
 						drawList->AddRectFilled(cstart, cend, mPalette[(int)PaletteIndex::Cursor]);
 						if (elapsed > 800)
-							timeStart = timeEnd;
+							mStartTime = timeEnd;
 					}
 				}
 			}
@@ -1019,13 +1017,13 @@ void TextEditor::Render()
 				auto& glyph = line[i];
 				auto color = GetGlyphColor(glyph);
 
-				if ((color != prevColor || glyph.mChar == '\t' || glyph.mChar == ' ') && !buffer.empty())
+				if ((color != prevColor || glyph.mChar == '\t' || glyph.mChar == ' ') && !mLineBuffer.empty())
 				{
 					const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-					drawList->AddText(newOffset, prevColor, buffer.c_str());
-					auto textSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buffer.c_str(), nullptr, nullptr);
+					drawList->AddText(newOffset, prevColor, mLineBuffer.c_str());
+					auto textSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, mLineBuffer.c_str(), nullptr, nullptr);
 					bufferOffset.x += textSize.x;
-					buffer.clear();
+					mLineBuffer.clear();
 				}
 				prevColor = color;
 
@@ -1066,16 +1064,16 @@ void TextEditor::Render()
 				{
 					auto l = UTF8CharLength(glyph.mChar);
 					while (l-- > 0)
-						buffer.push_back(line[i++].mChar);
+						mLineBuffer.push_back(line[i++].mChar);
 				}
 				++columnNo;
 			}
 
-			if (!buffer.empty())
+			if (!mLineBuffer.empty())
 			{
 				const ImVec2 newOffset(textScreenPos.x + bufferOffset.x, textScreenPos.y + bufferOffset.y);
-				drawList->AddText(newOffset, prevColor, buffer.c_str());
-				buffer.clear();
+				drawList->AddText(newOffset, prevColor, mLineBuffer.c_str());
+				mLineBuffer.clear();
 			}
 
 			++lineNo;
