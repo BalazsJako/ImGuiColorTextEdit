@@ -31,3 +31,6 @@
 *.out
 *.app
 TextEditor.cpp.bak
+*.bak
+Save/TextEditor.h
+Save/TextEditor.cpp
