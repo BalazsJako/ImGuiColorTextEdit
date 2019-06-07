@@ -343,10 +343,9 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 		{
 			if (line[columnIndex].mChar == '\t')
 			{
-				auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
 				float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 				float oldX = columnX;
-				columnX = (1.0f * fontScale + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+				columnX = (1.0f + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 				columnWidth = columnX - oldX;
 				columnCoord++;
 			}
@@ -892,7 +891,6 @@ void TextEditor::Render()
 
 	if (!mLines.empty())
 	{
-		auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
 		float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
 
 		while (lineNo <= lineMax)
@@ -992,7 +990,7 @@ void TextEditor::Render()
 							auto c = line[cindex].mChar;
 							if (c == '\t')
 							{
-								auto x = (1.0f * fontScale + std::floor((1.0f + cx) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+								auto x = (1.0f + std::floor((1.0f + cx) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 								width = x - cx;
 							}
 							else
@@ -1034,12 +1032,12 @@ void TextEditor::Render()
 				if (glyph.mChar == '\t')
 				{
 					auto oldX = bufferOffset.x;
-					bufferOffset.x = (1.0f * fontScale + std::floor((1.0f + bufferOffset.x) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+					bufferOffset.x = (1.0f + std::floor((1.0f + bufferOffset.x) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 					++i;
 
 					if (mShowWhitespaces)
 					{
-						const auto s = ImGui::GetFontSize() * fontScale;
+						const auto s = ImGui::GetFontSize();
 						const auto x1 = textScreenPos.x + oldX + 1.0f;
 						const auto x2 = textScreenPos.x + bufferOffset.x - 1.0f;
 						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
@@ -1056,7 +1054,7 @@ void TextEditor::Render()
 				{
 					if (mShowWhitespaces)
 					{
-						const auto s = ImGui::GetFontSize() * fontScale;
+						const auto s = ImGui::GetFontSize();
 						const auto x = textScreenPos.x + bufferOffset.x + spaceSize * 0.5f;
 						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
 						drawList->AddCircleFilled(ImVec2(x, y), 1.5f, 0x80808080, 4);
@@ -2396,14 +2394,13 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 {
 	auto& line = mLines[aFrom.mLine];
 	float distance = 0.0f;
-	auto fontScale = ImGui::GetFontSize() / ImGui::GetFont()->FontSize;
 	float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ", nullptr, nullptr).x;
 	int colIndex = GetCharacterIndex(aFrom);
 	for (size_t it = 0u; it < line.size() && it < colIndex; )
 	{
 		if (line[it].mChar == '\t')
 		{
-			distance = (1.0f * fontScale + std::floor((1.0f + distance) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+			distance = (1.0f + std::floor((1.0f + distance) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 			++it;
 		}
 		else
