@@ -1,7 +1,7 @@
 # ImGuiColorTextEdit
 Syntax highlighting text editor for ImGui
 
-![Screenshot](https://github.com/BalazsJako/ImGuiColorTextEdit/blob/dev/ImGuiTextEdit.png "Screenshot")
+![Screenshot](https://github.com/BalazsJako/ImGuiColorTextEdit/wiki/ImGuiTextEdit.png "Screenshot")
 
 Demo project: https://github.com/BalazsJako/ColorTextEditorDemo
 
