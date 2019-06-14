@@ -335,20 +335,23 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 		auto& line = mLines.at(lineNo);
 
 		int columnIndex = 0;
-		std::string cumulatedString = "";
-		float columnWidth = 0.0f;
 		float columnX = 0.0f;
 
-		// First we find the hovered column coord.
-		while (mTextStart + columnX < local.x && (size_t)columnIndex < line.size())
+		while ((size_t)columnIndex < line.size())
 		{
+			float columnWidth = 0.0f;
+
 			if (line[columnIndex].mChar == '\t')
 			{
 				float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 				float oldX = columnX;
-				columnX = (1.0f + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
-				columnWidth = columnX - oldX;
-				columnCoord++;
+				float newColumnX = (1.0f + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
+				columnWidth = newColumnX - oldX;
+				if (mTextStart + columnX + columnWidth * 0.5f > local.x)
+					break;
+				columnX = newColumnX;
+				columnCoord = (columnCoord / mTabSize) * mTabSize + mTabSize;
+				columnIndex++;
 			}
 			else
 			{
@@ -359,14 +362,12 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 					buf[i++] = line[columnIndex++].mChar;
 				buf[i] = '\0';
 				columnWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf).x;
+				if (mTextStart + columnX + columnWidth * 0.5f > local.x)
+					break;
 				columnX += columnWidth;
 				columnCoord++;
 			}
 		}
-
-		// Then we reduce by 1 column coord if cursor is on the left side of the hovered column.
-		if (mTextStart + columnX - columnWidth / 2.0f > local.x)
-			columnIndex = std::max(0, columnIndex - 1);
 	}
 
 	return SanitizeCoordinates(Coordinates(lineNo, columnCoord));
@@ -760,7 +761,8 @@ void TextEditor::HandleKeyboardInputs()
 			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
 			EnterCharacter('\t', shift);
-		if (!IsReadOnly() && !io.InputQueueCharacters.empty() && !ctrl)
+
+		if (!IsReadOnly() && !io.InputQueueCharacters.empty())
 		{
 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
 			{
@@ -797,7 +799,7 @@ void TextEditor::HandleMouseInputs()
 			{
 				if (!ctrl)
 				{
-					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
 					mSelectionMode = SelectionMode::Line;
 					SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 				}
@@ -813,7 +815,7 @@ void TextEditor::HandleMouseInputs()
 			{
 				if (!ctrl)
 				{
-					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
 					if (mSelectionMode == SelectionMode::Line)
 						mSelectionMode = SelectionMode::Normal;
 					else
@@ -829,7 +831,7 @@ void TextEditor::HandleMouseInputs()
 			*/
 			else if (click)
 			{
-				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
 				if (ctrl)
 					mSelectionMode = SelectionMode::Word;
 				else
@@ -842,7 +844,7 @@ void TextEditor::HandleMouseInputs()
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
 				io.WantCaptureMouse = true;
-				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+				mState.mCursorPosition = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
 				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 			}
 		}
@@ -1122,7 +1124,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mTextChanged = false;
 	mCursorPositionChanged = false;
 
-	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
+	ImGui::PushStyleColor(ImGuiCol_ChildWindowBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 	if (!mIgnoreImGuiChild)
 		ImGui::BeginChild(aTitle, aSize, aBorder, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysHorizontalScrollbar | ImGuiWindowFlags_NoMove);
