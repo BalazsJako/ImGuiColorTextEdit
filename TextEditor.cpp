@@ -2758,7 +2758,8 @@ static bool TokenizeLuaStyleString(const char * in_begin, const char * in_end, c
 		is_double_quotes = true;
 		break;
 	case '[':
-		if (*(p + 1) == '[')
+		p++;
+		if (p < in_end && *(p) == '[')
 			is_double_square_brackets = true;
 		break;
 	}
@@ -2770,7 +2771,7 @@ static bool TokenizeLuaStyleString(const char * in_begin, const char * in_end, c
 		while (p < in_end)
 		{
 			// handle end of string
-			if ((is_single_quote && *p == '\'') || (is_double_quotes && *p == '"') || (is_double_square_brackets && *p == ']' && *(p + 1) == ']'))
+			if ((is_single_quote && *p == '\'') || (is_double_quotes && *p == '"') || (is_double_square_brackets && *p == ']' && p + 1 < in_end && *(p + 1) == ']'))
 			{
 				out_begin = in_begin;
 
