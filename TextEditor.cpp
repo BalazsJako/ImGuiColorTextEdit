@@ -1040,12 +1040,12 @@ void TextEditor::Render()
 					{
 						const auto s = ImGui::GetFontSize();
 						const auto x1 = textScreenPos.x + oldX + 1.0f;
-						const auto x2 = textScreenPos.x + bufferOffset.x - 1.0f;
+						const auto x2 = textScreenPos.x + oldX + mCharAdvance.x - 1.0f;
 						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
 						const ImVec2 p1(x1, y);
 						const ImVec2 p2(x2, y);
-						const ImVec2 p3(x2 - s * 0.2f, y - s * 0.2f);
-						const ImVec2 p4(x2 - s * 0.2f, y + s * 0.2f);
+						const ImVec2 p3(x2 - s * 0.16f, y - s * 0.16f);
+						const ImVec2 p4(x2 - s * 0.16f, y + s * 0.16f);
 						drawList->AddLine(p1, p2, 0x90909090);
 						drawList->AddLine(p2, p3, 0x90909090);
 						drawList->AddLine(p2, p4, 0x90909090);
