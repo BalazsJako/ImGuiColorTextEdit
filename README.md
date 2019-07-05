@@ -23,7 +23,7 @@ The code is (still) work in progress, please report if you find any issues.
  - color palette support: you can switch between different color palettes, or even define your own
  
 # Known issues
- - syntax highligthing of most languages - except C/C++ - is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. C/C++ has a hand-written tokenizer which is much faster. 
+ - syntax highligthing of most languages - except C/C++ and Lua - is based on std::regex, which is diasppointingly slow. Because of that, the highlighting process is amortized between multiple frames. C/C++ and Lua have a hand-written tokenizer which is much faster. 
  
 Please post your screenshots if you find this little piece of software useful. :)
 
