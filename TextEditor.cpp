@@ -104,9 +104,7 @@ std::string TextEditor::GetText(const Coordinates & aStart, const Coordinates & 
 		{
 			istart = 0;
 			++lstart;
-
-			if (lstart < lend)
-				result += '\n';
+			result += '\n';
 		}
 	}
 
@@ -2105,7 +2103,9 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 
 std::string TextEditor::GetText() const
 {
-	return GetText(Coordinates(), Coordinates((int)mLines.size(), 0));
+	auto lastLine = (int)mLines.size() - 1;
+	auto lastLineLength = GetLineMaxColumn(lastLine);
+	return GetText(Coordinates(), Coordinates(lastLine, lastLineLength));
 }
 
 std::vector<std::string> TextEditor::GetTextLines() const
