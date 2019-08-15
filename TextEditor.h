@@ -230,6 +230,9 @@ public:
 	inline void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
 	inline bool IsShowingWhitespaces() const { return mShowWhitespaces; }
 
+	inline void SetShowShortTabGlyphs(bool aValue) { mShowShortTabGlyphs = aValue; }
+	inline bool IsShowingShortTabGlyphs() const { return mShowShortTabGlyphs; }
+
 	void SetTabSize(int aValue);
 	inline int GetTabSize() const { return mTabSize; }
 
@@ -371,6 +374,7 @@ private:
 	bool mHandleMouseInputs;
 	bool mIgnoreImGuiChild;
 	bool mShowWhitespaces;
+	bool mShowShortTabGlyphs;
 
 	Palette mPaletteBase;
 	Palette mPalette;
