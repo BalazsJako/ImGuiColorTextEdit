@@ -297,7 +297,7 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			auto d = UTF8CharLength(*aValue);
 			while (d-- > 0 && *aValue != '\0')
 				line.insert(line.begin() + cindex++, Glyph(*aValue++, PaletteIndex::Default));
-			++aWhere.mColumn;
+			aWhere.mColumn = GetCharacterColumn(aWhere.mLine, cindex);
 		}
 
 		mTextChanged = true;
