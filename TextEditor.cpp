@@ -1113,7 +1113,7 @@ void TextEditor::Render()
 		}
 
 		// Draw a tooltip on known identifiers/preprocessor symbols
-		if (ImGui::IsMousePosValid())
+		if (ImGui::IsMousePosValid() && ImGui::IsWindowHovered())
 		{
 			auto mpos = ImGui::GetMousePos();
 			ImVec2 origin = ImGui::GetCursorScreenPos();
@@ -1147,7 +1147,6 @@ void TextEditor::Render()
 			}
 		}
 	}
-
 
 	ImGui::Dummy(ImVec2((longest + 2), mLines.size() * mCharAdvance.y));
 
