@@ -322,10 +322,11 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 	++mUndoIndex;
 }
 
-TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition) const
+TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition, bool aInsertionMode) const
 {
 	ImVec2 origin = ImGui::GetCursorScreenPos();
-	ImVec2 local(aPosition.x - origin.x, aPosition.y - origin.y);
+	ImVec2 local(aPosition.x - origin.x + 3.0f, aPosition.y - origin.y);
+	float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 
 	int lineNo = std::max(0, (int)floor(local.y / mCharAdvance.y));
 
@@ -339,17 +340,18 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 		std::string cumulatedString = "";
 		float columnWidth = 0.0f;
 		float columnX = 0.0f;
+		int delta = 0;
 
 		// First we find the hovered column coord.
-		while (mTextStart + columnX < local.x && (size_t)columnIndex < line.size())
+		while (mTextStart + columnX - (aInsertionMode ? 0.5f : 0.0f) * columnWidth < local.x && (size_t)columnIndex < line.size())
 		{
+			columnCoord += delta;
 			if (line[columnIndex].mChar == '\t')
 			{
-				float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 				float oldX = columnX;
 				columnX = (1.0f + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 				columnWidth = columnX - oldX;
-				columnCoord++;
+				delta = columnCoord - (columnCoord / mTabSize) * mTabSize + mTabSize;
 			}
 			else
 			{
@@ -357,17 +359,18 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 				auto d = UTF8CharLength(line[columnIndex].mChar);
 				int i = 0;
 				while (i < 6 && d-- > 0)
-					buf[i++] = line[columnIndex++].mChar;
+					buf[i++] = line[columnIndex].mChar;
 				buf[i] = '\0';
 				columnWidth = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf).x;
 				columnX += columnWidth;
-				columnCoord++;
+				delta = 1;
 			}
+			++columnIndex;
 		}
 
 		// Then we reduce by 1 column coord if cursor is on the left side of the hovered column.
-		if (mTextStart + columnX - columnWidth / 2.0f > local.x)
-			columnIndex = std::max(0, columnIndex - 1);
+		//if (aInsertionMode && mTextStart + columnX - columnWidth * 2.0f < local.x)
+		//	columnIndex = std::min((int)line.size() - 1, columnIndex + 1);
 	}
 
 	return SanitizeCoordinates(Coordinates(lineNo, columnCoord));
@@ -419,7 +422,7 @@ TextEditor::Coordinates TextEditor::FindWordEnd(const Coordinates & aFrom) const
 	if (cindex >= (int)line.size())
 		return at;
 
-	bool prevspace = (bool)isspace(line[cindex].mChar);
+	bool prevspace = (bool)!!isspace(line[cindex].mChar);
 	auto cstart = (PaletteIndex)line[cindex].mColorIndex;
 	while (cindex < (int)line.size())
 	{
@@ -453,7 +456,7 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 	if (cindex < (int)mLines[at.mLine].size())
 	{
 		auto& line = mLines[at.mLine];
-		isword = isalnum(line[cindex].mChar);
+		isword = !!isalnum(line[cindex].mChar);
 		skip = isword;
 	}
 
@@ -841,7 +844,7 @@ void TextEditor::HandleMouseInputs()
 			*/
 			else if (click)
 			{
-				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite));
 				if (ctrl)
 					mSelectionMode = SelectionMode::Word;
 				else
@@ -854,7 +857,7 @@ void TextEditor::HandleMouseInputs()
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
 				io.WantCaptureMouse = true;
-				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+				mState.mCursorPosition = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite));
 				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
 			}
 		}
@@ -1004,10 +1007,10 @@ void TextEditor::Render()
 							}
 							else
 							{
-								char buf[2];
-								buf[0] = line[cindex].mChar;
-								buf[1] = '\0';
-								width = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf).x;
+								char buf2[2];
+								buf2[0] = line[cindex].mChar;
+								buf2[1] = '\0';
+								width = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, buf2).x;
 							}
 						}
 						ImVec2 cstart(textScreenPos.x + cx, lineStartScreenPos.y);
@@ -1112,24 +1115,33 @@ void TextEditor::Render()
 		// Draw a tooltip on known identifiers/preprocessor symbols
 		if (ImGui::IsMousePosValid())
 		{
-			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
-			if (!id.empty())
+			auto mpos = ImGui::GetMousePos();
+			ImVec2 origin = ImGui::GetCursorScreenPos();
+			ImVec2 local(mpos.x - origin.x, mpos.y - origin.y);
+			//printf("Mouse: pos(%g, %g), origin(%g, %g), local(%g, %g)\n", mpos.x, mpos.y, origin.x, origin.y, local.x, local.y);
+			if (local.x >= mTextStart)
 			{
-				auto it = mLanguageDefinition.mIdentifiers.find(id);
-				if (it != mLanguageDefinition.mIdentifiers.end())
+				auto pos = ScreenPosToCoordinates(mpos);
+				printf("Coord(%d, %d)\n", pos.mLine, pos.mColumn);
+				auto id = GetWordAt(pos);
+				if (!id.empty())
 				{
-					ImGui::BeginTooltip();
-					ImGui::TextUnformatted(it->second.mDeclaration.c_str());
-					ImGui::EndTooltip();
-				}
-				else
-				{
-					auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
-					if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+					auto it = mLanguageDefinition.mIdentifiers.find(id);
+					if (it != mLanguageDefinition.mIdentifiers.end())
 					{
 						ImGui::BeginTooltip();
-						ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+						ImGui::TextUnformatted(it->second.mDeclaration.c_str());
 						ImGui::EndTooltip();
+					}
+					else
+					{
+						auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
+						if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+						{
+							ImGui::BeginTooltip();
+							ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+							ImGui::EndTooltip();
+						}
 					}
 				}
 			}
