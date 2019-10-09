@@ -336,16 +336,14 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 	{
 		auto& line = mLines.at(lineNo);
 
-		int columnIndex = 0;
-		std::string cumulatedString = "";
-		float columnWidth = 0.0f;
 		float columnX = 0.0f;
-		int delta = 0;
-
+		
 		// First we find the hovered column coord.
-		while (mTextStart + columnX - (aInsertionMode ? 0.5f : 0.0f) * columnWidth < local.x && (size_t)columnIndex < line.size())
+		for (size_t columnIndex = 0; columnIndex < line.size(); ++columnIndex)
 		{
-			columnCoord += delta;
+			float columnWidth = 0.0f;
+			int delta = 0;
+		
 			if (line[columnIndex].mChar == '\t')
 			{
 				float oldX = columnX;
@@ -365,7 +363,11 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 				columnX += columnWidth;
 				delta = 1;
 			}
-			++columnIndex;
+			
+			if (mTextStart + columnX - (aInsertionMode ? 0.5f : 0.0f) * columnWidth < local.x)
+				columnCoord += delta;
+			else
+				break;
 		}
 
 		// Then we reduce by 1 column coord if cursor is on the left side of the hovered column.
@@ -864,12 +866,8 @@ void TextEditor::HandleMouseInputs()
 	}
 }
 
-void TextEditor::Render()
+void TextEditor::UpdatePalette()
 {
-	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
-	const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
-	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
-
 	/* Update palette with the current alpha from style */
 	for (int i = 0; i < (int)PaletteIndex::Max; ++i)
 	{
@@ -877,6 +875,13 @@ void TextEditor::Render()
 		color.w *= ImGui::GetStyle().Alpha;
 		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
 	}
+}
+
+void TextEditor::Render()
+{
+	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
+	const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
+	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
 
 	assert(mLineBuffer.empty());
 
@@ -1076,9 +1081,9 @@ void TextEditor::Render()
 							p4 = ImVec2(x2 - s * 0.2f, y + s * 0.2f);
 						}
 
-						drawList->AddLine(p1, p2, 0x90909090);
-						drawList->AddLine(p2, p3, 0x90909090);
-						drawList->AddLine(p2, p4, 0x90909090);
+						drawList->AddLine(p1, p2, mPalette[(int)PaletteIndex::ControlCharacter]);
+						drawList->AddLine(p2, p3, mPalette[(int)PaletteIndex::ControlCharacter]);
+						drawList->AddLine(p2, p4, mPalette[(int)PaletteIndex::ControlCharacter]);
 					}
 				}
 				else if (glyph.mChar == ' ')
@@ -1122,7 +1127,7 @@ void TextEditor::Render()
 			if (local.x >= mTextStart)
 			{
 				auto pos = ScreenPosToCoordinates(mpos);
-				printf("Coord(%d, %d)\n", pos.mLine, pos.mColumn);
+				//printf("Coord(%d, %d)\n", pos.mLine, pos.mColumn);
 				auto id = GetWordAt(pos);
 				if (!id.empty())
 				{
@@ -1165,6 +1170,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mTextChanged = false;
 	mCursorPositionChanged = false;
 
+	UpdatePalette();
+	
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
 	if (!mIgnoreImGuiChild)
@@ -2067,6 +2074,7 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 			0xffe0e0e0, // Cursor
 			0x80a06020, // Selection
 			0x800020ff, // ErrorMarker
+			0x90909090, // ControlCharacter
 			0x40f08000, // Breakpoint
 			0xff707000, // Line number
 			0x40000000, // Current line fill
@@ -2095,6 +2103,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 			0xff000000, // Cursor
 			0x80600000, // Selection
 			0xa00010ff, // ErrorMarker
+			0x90909090, // ControlCharacter
 			0x80f08000, // Breakpoint
 			0xff505000, // Line number
 			0x40000000, // Current line fill
