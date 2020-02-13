@@ -48,6 +48,7 @@ TextEditor::TextEditor()
 	, mIgnoreImGuiChild(false)
 	, mShowWhitespaces(true)
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+	, mExternalUndoBuffer(nullptr)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -319,6 +320,16 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 	mUndoBuffer.resize((size_t)(mUndoIndex + 1));
 	mUndoBuffer.back() = aValue;
 	++mUndoIndex;
+
+	// If a custom undo buffer is set we send the undo value on it
+	if ( mExternalUndoBuffer != nullptr) {
+		mExternalUndoBuffer->AddUndo(aValue, *this);
+	}
+}
+
+void TextEditor::SetExternalUndoBuffer(ExternalUndoBufferInterface* aExternalUndoBuffer)
+{
+	this->mExternalUndoBuffer = aExternalUndoBuffer;
 }
 
 TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition) const
@@ -2477,6 +2488,18 @@ TextEditor::UndoRecord::UndoRecord(
 {
 	assert(mAddedStart <= mAddedEnd);
 	assert(mRemovedStart <= mRemovedEnd);
+}
+
+TextEditor::UndoRecord::UndoRecord(UndoRecord& undoRecord)
+	: mAdded(undoRecord.mAdded)
+	, mAddedStart(undoRecord.mAddedStart)
+	, mAddedEnd(undoRecord.mAddedEnd)
+	, mRemoved(undoRecord.mRemoved)
+	, mRemovedStart(undoRecord.mRemovedStart)
+	, mRemovedEnd(undoRecord.mRemovedEnd)
+	, mBefore(undoRecord.mBefore)
+	, mAfter(undoRecord.mAfter) {
+
 }
 
 void TextEditor::UndoRecord::Undo(TextEditor * aEditor)

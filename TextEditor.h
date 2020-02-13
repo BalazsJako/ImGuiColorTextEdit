@@ -182,6 +182,60 @@ public:
 		static const LanguageDefinition& Lua();
 	};
 
+	struct EditorState
+	{
+		Coordinates mSelectionStart;
+		Coordinates mSelectionEnd;
+		Coordinates mCursorPosition;
+	};
+
+	class UndoRecord
+	{
+	public:
+		UndoRecord() {}
+		~UndoRecord() {}
+
+		UndoRecord(
+			const std::string& aAdded,
+			const TextEditor::Coordinates aAddedStart,
+			const TextEditor::Coordinates aAddedEnd,
+
+			const std::string& aRemoved,
+			const TextEditor::Coordinates aRemovedStart,
+			const TextEditor::Coordinates aRemovedEnd,
+
+			TextEditor::EditorState& aBefore,
+			TextEditor::EditorState& aAfter);
+
+		UndoRecord(UndoRecord& undoRecord);
+
+		void Undo(TextEditor* aEditor);
+		void Redo(TextEditor* aEditor);
+
+		std::string mAdded;
+		Coordinates mAddedStart;
+		Coordinates mAddedEnd;
+
+		std::string mRemoved;
+		Coordinates mRemovedStart;
+		Coordinates mRemovedEnd;
+
+		EditorState mBefore;
+		EditorState mAfter;
+	};
+
+	class ExternalUndoBufferInterface
+	{
+	public:
+		ExternalUndoBufferInterface() {};
+		~ExternalUndoBufferInterface() {};
+
+		virtual void AddUndo(UndoRecord&, TextEditor&)=0;
+
+	};
+
+	typedef std::vector<UndoRecord> UndoBuffer;
+
 	TextEditor();
 	~TextEditor();
 
@@ -261,6 +315,7 @@ public:
 	bool CanRedo() const;
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
+	void SetExternalUndoBuffer(ExternalUndoBufferInterface*);
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
@@ -268,48 +323,6 @@ public:
 
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
-
-	struct EditorState
-	{
-		Coordinates mSelectionStart;
-		Coordinates mSelectionEnd;
-		Coordinates mCursorPosition;
-	};
-
-	class UndoRecord
-	{
-	public:
-		UndoRecord() {}
-		~UndoRecord() {}
-
-		UndoRecord(
-			const std::string& aAdded,
-			const TextEditor::Coordinates aAddedStart,
-			const TextEditor::Coordinates aAddedEnd,
-
-			const std::string& aRemoved,
-			const TextEditor::Coordinates aRemovedStart,
-			const TextEditor::Coordinates aRemovedEnd,
-
-			TextEditor::EditorState& aBefore,
-			TextEditor::EditorState& aAfter);
-
-		void Undo(TextEditor* aEditor);
-		void Redo(TextEditor* aEditor);
-
-		std::string mAdded;
-		Coordinates mAddedStart;
-		Coordinates mAddedEnd;
-
-		std::string mRemoved;
-		Coordinates mRemovedStart;
-		Coordinates mRemovedEnd;
-
-		EditorState mBefore;
-		EditorState mAfter;
-	};
-
-	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
 	void Colorize(int aFromLine = 0, int aCount = -1);
@@ -353,6 +366,7 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
+	ExternalUndoBufferInterface* mExternalUndoBuffer;
 
 	int mTabSize;
 	bool mOverwrite;
