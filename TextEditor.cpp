@@ -1429,6 +1429,16 @@ void TextEditor::SetSelectionEnd(const Coordinates & aPosition)
 		std::swap(mState.mSelectionStart, mState.mSelectionEnd);
 }
 
+const TextEditor::Coordinates TextEditor::GetSelectionStart() const
+{
+	return mState.mSelectionStart;
+}
+
+const TextEditor::Coordinates TextEditor::GetSelectionEnd() const
+{
+	return mState.mSelectionEnd;
+}
+
 void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aEnd, SelectionMode aMode)
 {
 	auto oldSelStart = mState.mSelectionStart;
@@ -1938,6 +1948,7 @@ bool TextEditor::HasSelection() const
 {
 	return mState.mSelectionEnd > mState.mSelectionStart;
 }
+
 
 void TextEditor::Copy()
 {

@@ -297,6 +297,8 @@ public:
 
 	void SetSelectionStart(const Coordinates& aPosition);
 	void SetSelectionEnd(const Coordinates& aPosition);
+	const Coordinates GetSelectionStart()const;
+	const Coordinates GetSelectionEnd()const;
 	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
 	void SelectWordUnderCursor();
 	void SelectAll();
