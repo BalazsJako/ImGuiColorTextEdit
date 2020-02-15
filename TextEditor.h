@@ -227,11 +227,7 @@ public:
 	class ExternalUndoBufferInterface
 	{
 	public:
-		ExternalUndoBufferInterface() {};
-		~ExternalUndoBufferInterface() {};
-
-		virtual void AddUndo(UndoRecord&, TextEditor&)=0;
-
+		virtual void AddUndo(UndoRecord&) = 0;
 	};
 
 	typedef std::vector<UndoRecord> UndoBuffer;

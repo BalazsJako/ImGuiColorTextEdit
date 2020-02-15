@@ -323,7 +323,7 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 
 	// If a custom undo buffer is set we send the undo value on it
 	if ( mExternalUndoBuffer != nullptr) {
-		mExternalUndoBuffer->AddUndo(aValue, *this);
+		mExternalUndoBuffer->AddUndo(aValue);
 	}
 }
 
