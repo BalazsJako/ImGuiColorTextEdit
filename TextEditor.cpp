@@ -1482,6 +1482,22 @@ void TextEditor::InsertText(const char * aValue)
 	if (aValue == nullptr)
 		return;
 
+	// Prepare the undo record
+	UndoRecord u;
+	u.mBefore = mState;
+
+	if (HasSelection())
+	{
+		u.mRemoved = GetSelectedText();
+		u.mRemovedStart = mState.mSelectionStart;
+		u.mRemovedEnd = mState.mSelectionEnd;
+		DeleteSelection();
+	}
+
+	u.mAdded = aValue;
+	u.mAddedStart = GetActualCursorCoordinates();
+
+	// Insert text
 	auto pos = GetActualCursorCoordinates();
 	auto start = std::min(pos, mState.mSelectionStart);
 	int totalLines = pos.mLine - start.mLine;
@@ -1491,6 +1507,11 @@ void TextEditor::InsertText(const char * aValue)
 	SetSelection(pos, pos);
 	SetCursorPosition(pos);
 	Colorize(start.mLine - 1, totalLines + 2);
+
+	// Finish the undorecord and add it to the buffer
+	u.mAddedEnd = GetActualCursorCoordinates();
+	u.mAfter = mState;
+	AddUndo(u);
 }
 
 void TextEditor::DeleteSelection()
