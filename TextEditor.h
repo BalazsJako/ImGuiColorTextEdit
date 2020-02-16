@@ -182,6 +182,56 @@ public:
 		static const LanguageDefinition& Lua();
 	};
 
+	struct EditorState
+	{
+		Coordinates mSelectionStart;
+		Coordinates mSelectionEnd;
+		Coordinates mCursorPosition;
+	};
+
+	class UndoRecord
+	{
+	public:
+		UndoRecord() {}
+		~UndoRecord() {}
+
+		UndoRecord(
+			const std::string& aAdded,
+			const TextEditor::Coordinates aAddedStart,
+			const TextEditor::Coordinates aAddedEnd,
+
+			const std::string& aRemoved,
+			const TextEditor::Coordinates aRemovedStart,
+			const TextEditor::Coordinates aRemovedEnd,
+
+			TextEditor::EditorState& aBefore,
+			TextEditor::EditorState& aAfter);
+
+		UndoRecord(UndoRecord& undoRecord);
+
+		void Undo(TextEditor* aEditor);
+		void Redo(TextEditor* aEditor);
+
+		std::string mAdded;
+		Coordinates mAddedStart;
+		Coordinates mAddedEnd;
+
+		std::string mRemoved;
+		Coordinates mRemovedStart;
+		Coordinates mRemovedEnd;
+
+		EditorState mBefore;
+		EditorState mAfter;
+	};
+
+	class ExternalUndoBufferInterface
+	{
+	public:
+		virtual void AddUndo(UndoRecord&) = 0;
+	};
+
+	typedef std::vector<UndoRecord> UndoBuffer;
+
 	TextEditor();
 	~TextEditor();
 
@@ -233,8 +283,8 @@ public:
 	void SetTabSize(int aValue);
 	inline int GetTabSize() const { return mTabSize; }
 
-	void InsertText(const std::string& aValue);
-	void InsertText(const char* aValue);
+	void InsertText(const std::string& aValue, bool aSelect = false);
+	void InsertText(const char* aValue, bool aSelect = false);
 
 	void MoveUp(int aAmount = 1, bool aSelect = false);
 	void MoveDown(int aAmount = 1, bool aSelect = false);
@@ -247,6 +297,8 @@ public:
 
 	void SetSelectionStart(const Coordinates& aPosition);
 	void SetSelectionEnd(const Coordinates& aPosition);
+	const Coordinates GetSelectionStart()const;
+	const Coordinates GetSelectionEnd()const;
 	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
 	void SelectWordUnderCursor();
 	void SelectAll();
@@ -261,6 +313,7 @@ public:
 	bool CanRedo() const;
 	void Undo(int aSteps = 1);
 	void Redo(int aSteps = 1);
+	void SetExternalUndoBuffer(ExternalUndoBufferInterface*);
 
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
@@ -268,48 +321,6 @@ public:
 
 private:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
-
-	struct EditorState
-	{
-		Coordinates mSelectionStart;
-		Coordinates mSelectionEnd;
-		Coordinates mCursorPosition;
-	};
-
-	class UndoRecord
-	{
-	public:
-		UndoRecord() {}
-		~UndoRecord() {}
-
-		UndoRecord(
-			const std::string& aAdded,
-			const TextEditor::Coordinates aAddedStart,
-			const TextEditor::Coordinates aAddedEnd,
-
-			const std::string& aRemoved,
-			const TextEditor::Coordinates aRemovedStart,
-			const TextEditor::Coordinates aRemovedEnd,
-
-			TextEditor::EditorState& aBefore,
-			TextEditor::EditorState& aAfter);
-
-		void Undo(TextEditor* aEditor);
-		void Redo(TextEditor* aEditor);
-
-		std::string mAdded;
-		Coordinates mAddedStart;
-		Coordinates mAddedEnd;
-
-		std::string mRemoved;
-		Coordinates mRemovedStart;
-		Coordinates mRemovedEnd;
-
-		EditorState mBefore;
-		EditorState mAfter;
-	};
-
-	typedef std::vector<UndoRecord> UndoBuffer;
 
 	void ProcessInputs();
 	void Colorize(int aFromLine = 0, int aCount = -1);
@@ -353,6 +364,7 @@ private:
 	EditorState mState;
 	UndoBuffer mUndoBuffer;
 	int mUndoIndex;
+	ExternalUndoBufferInterface* mExternalUndoBuffer;
 
 	int mTabSize;
 	bool mOverwrite;

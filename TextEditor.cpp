@@ -48,6 +48,7 @@ TextEditor::TextEditor()
 	, mIgnoreImGuiChild(false)
 	, mShowWhitespaces(true)
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
+	, mExternalUndoBuffer(nullptr)
 {
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
@@ -319,6 +320,16 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 	mUndoBuffer.resize((size_t)(mUndoIndex + 1));
 	mUndoBuffer.back() = aValue;
 	++mUndoIndex;
+
+	// If a custom undo buffer is set we send the undo value on it
+	if ( mExternalUndoBuffer != nullptr) {
+		mExternalUndoBuffer->AddUndo(aValue);
+	}
+}
+
+void TextEditor::SetExternalUndoBuffer(ExternalUndoBufferInterface* aExternalUndoBuffer)
+{
+	this->mExternalUndoBuffer = aExternalUndoBuffer;
 }
 
 TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition) const
@@ -1418,6 +1429,16 @@ void TextEditor::SetSelectionEnd(const Coordinates & aPosition)
 		std::swap(mState.mSelectionStart, mState.mSelectionEnd);
 }
 
+const TextEditor::Coordinates TextEditor::GetSelectionStart() const
+{
+	return mState.mSelectionStart;
+}
+
+const TextEditor::Coordinates TextEditor::GetSelectionEnd() const
+{
+	return mState.mSelectionEnd;
+}
+
 void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aEnd, SelectionMode aMode)
 {
 	auto oldSelStart = mState.mSelectionStart;
@@ -1461,25 +1482,46 @@ void TextEditor::SetTabSize(int aValue)
 	mTabSize = std::max(0, std::min(32, aValue));
 }
 
-void TextEditor::InsertText(const std::string & aValue)
+void TextEditor::InsertText(const std::string & aValue, bool aSelect)
 {
-	InsertText(aValue.c_str());
+	InsertText(aValue.c_str(), aSelect);
 }
 
-void TextEditor::InsertText(const char * aValue)
+void TextEditor::InsertText(const char * aValue, bool aSelect)
 {
 	if (aValue == nullptr)
 		return;
 
+	// Prepare the undo record
+	UndoRecord u;
+	u.mBefore = mState;
+
+	if (HasSelection())
+	{
+		u.mRemoved = GetSelectedText();
+		u.mRemovedStart = mState.mSelectionStart;
+		u.mRemovedEnd = mState.mSelectionEnd;
+		DeleteSelection();
+	}
+
+	u.mAdded = aValue;
+	u.mAddedStart = GetActualCursorCoordinates();
+
+	// Insert text
 	auto pos = GetActualCursorCoordinates();
 	auto start = std::min(pos, mState.mSelectionStart);
 	int totalLines = pos.mLine - start.mLine;
 
 	totalLines += InsertTextAt(pos, aValue);
 
-	SetSelection(pos, pos);
+	SetSelection( std::min(u.mBefore.mSelectionStart, u.mBefore.mCursorPosition) , pos);
 	SetCursorPosition(pos);
 	Colorize(start.mLine - 1, totalLines + 2);
+
+	// Finish the undorecord and add it to the buffer
+	u.mAddedEnd = GetActualCursorCoordinates();
+	u.mAfter = mState;
+	AddUndo(u);
 }
 
 void TextEditor::DeleteSelection()
@@ -1906,6 +1948,7 @@ bool TextEditor::HasSelection() const
 {
 	return mState.mSelectionEnd > mState.mSelectionStart;
 }
+
 
 void TextEditor::Copy()
 {
@@ -2477,6 +2520,18 @@ TextEditor::UndoRecord::UndoRecord(
 {
 	assert(mAddedStart <= mAddedEnd);
 	assert(mRemovedStart <= mRemovedEnd);
+}
+
+TextEditor::UndoRecord::UndoRecord(UndoRecord& undoRecord)
+	: mAdded(undoRecord.mAdded)
+	, mAddedStart(undoRecord.mAddedStart)
+	, mAddedEnd(undoRecord.mAddedEnd)
+	, mRemoved(undoRecord.mRemoved)
+	, mRemovedStart(undoRecord.mRemovedStart)
+	, mRemovedEnd(undoRecord.mRemovedEnd)
+	, mBefore(undoRecord.mBefore)
+	, mAfter(undoRecord.mAfter) {
+
 }
 
 void TextEditor::UndoRecord::Undo(TextEditor * aEditor)
