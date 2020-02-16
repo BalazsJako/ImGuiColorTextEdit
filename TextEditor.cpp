@@ -1482,12 +1482,12 @@ void TextEditor::SetTabSize(int aValue)
 	mTabSize = std::max(0, std::min(32, aValue));
 }
 
-void TextEditor::InsertText(const std::string & aValue)
+void TextEditor::InsertText(const std::string & aValue, bool aSelect)
 {
-	InsertText(aValue.c_str());
+	InsertText(aValue.c_str(), aSelect);
 }
 
-void TextEditor::InsertText(const char * aValue)
+void TextEditor::InsertText(const char * aValue, bool aSelect)
 {
 	if (aValue == nullptr)
 		return;
@@ -1514,7 +1514,7 @@ void TextEditor::InsertText(const char * aValue)
 
 	totalLines += InsertTextAt(pos, aValue);
 
-	SetSelection(pos, pos);
+	SetSelection( std::min(u.mBefore.mSelectionStart, u.mBefore.mCursorPosition) , pos);
 	SetCursorPosition(pos);
 	Colorize(start.mLine - 1, totalLines + 2);
 

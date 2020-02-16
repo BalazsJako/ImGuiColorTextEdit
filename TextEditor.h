@@ -283,8 +283,8 @@ public:
 	void SetTabSize(int aValue);
 	inline int GetTabSize() const { return mTabSize; }
 
-	void InsertText(const std::string& aValue);
-	void InsertText(const char* aValue);
+	void InsertText(const std::string& aValue, bool aSelect = false);
+	void InsertText(const char* aValue, bool aSelect = false);
 
 	void MoveUp(int aAmount = 1, bool aSelect = false);
 	void MoveDown(int aAmount = 1, bool aSelect = false);
