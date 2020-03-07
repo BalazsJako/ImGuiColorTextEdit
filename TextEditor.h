@@ -36,6 +36,8 @@ public:
 		CurrentLineFill,
 		CurrentLineFillInactive,
 		CurrentLineEdge,
+		WhiteSpace,
+		WhiteSpaceTab,
 		Max
 	};
 

@@ -1050,6 +1050,7 @@ void TextEditor::Render()
 					if (mShowWhitespaces)
 					{
 						ImVec2 p1, p2, p3, p4;
+						const auto c = mPalette[(int)PaletteIndex::WhiteSpaceTab];
 
 						if (mShowShortTabGlyphs)
 						{
@@ -1076,9 +1077,9 @@ void TextEditor::Render()
 							p4 = ImVec2(x2 - s * 0.2f, y + s * 0.2f);
 						}
 
-						drawList->AddLine(p1, p2, 0x90909090);
-						drawList->AddLine(p2, p3, 0x90909090);
-						drawList->AddLine(p2, p4, 0x90909090);
+						drawList->AddLine(p1, p2, c);
+						drawList->AddLine(p2, p3, c);
+						drawList->AddLine(p2, p4, c);
 					}
 				}
 				else if (glyph.mChar == ' ')
@@ -1088,7 +1089,8 @@ void TextEditor::Render()
 						const auto s = ImGui::GetFontSize();
 						const auto x = textScreenPos.x + bufferOffset.x + spaceSize * 0.5f;
 						const auto y = textScreenPos.y + bufferOffset.y + s * 0.5f;
-						drawList->AddCircleFilled(ImVec2(x, y), 1.5f, 0x80808080, 4);
+						const auto c = mPalette[(int)PaletteIndex::WhiteSpace];
+						drawList->AddCircleFilled(ImVec2(x, y), 1.5f, c, 4);
 					}
 					bufferOffset.x += spaceSize;
 					i++;
@@ -2051,8 +2053,8 @@ void TextEditor::Redo(int aSteps)
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
 	const static Palette p = { {
-			0xff7f7f7f,	// Default
-			0xffd69c56,	// Keyword	
+			0xffb0b0b0,	// Default
+			0xffd69c56,	// Keyword
 			0xff00ff00,	// Number
 			0xff7070e0,	// String
 			0xff70a0e0, // Char literal
@@ -2072,6 +2074,8 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 			0x40000000, // Current line fill
 			0x40808080, // Current line fill (inactive)
 			0x40a0a0a0, // Current line edge
+			0x38b0b0b0, // White Space
+			0x30b0b0b0, // White Space Tab
 		} };
 	return p;
 }
@@ -2079,7 +2083,7 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
 	const static Palette p = { {
-			0xff7f7f7f,	// None
+			0xff404040,	// None
 			0xffff0c06,	// Keyword	
 			0xff008000,	// Number
 			0xff2020a0,	// String
@@ -2093,13 +2097,15 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 			0xff405020, // Comment (multi line)
 			0xffffffff, // Background
 			0xff000000, // Cursor
-			0x80600000, // Selection
+			0x40600000, // Selection
 			0xa00010ff, // ErrorMarker
 			0x80f08000, // Breakpoint
 			0xff505000, // Line number
 			0x40000000, // Current line fill
 			0x40808080, // Current line fill (inactive)
 			0x40000000, // Current line edge
+			0x38404040, // White Space
+			0x30404040, // White Space Tab
 		} };
 	return p;
 }
@@ -2128,6 +2134,8 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 			0x40000000, // Current line fill
 			0x40808080, // Current line fill (inactive)
 			0x40000000, // Current line edge
+			0x3800ffff, // White Space
+			0x3000ffff, // White Space Tab
 		} };
 	return p;
 }
