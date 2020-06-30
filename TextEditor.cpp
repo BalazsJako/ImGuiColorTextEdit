@@ -32,6 +32,7 @@ TextEditor::TextEditor()
 	, mReadOnly(false)
 	, mWithinRender(false)
 	, mScrollToCursor(false)
+	, mScrollToCursor_CursorLineOnPage(-1)
 	, mScrollToTop(false)
 	, mTextChanged(false)
 	, mColorizerEnabled(true)
@@ -1115,6 +1116,7 @@ void TextEditor::Render()
 		EnsureCursorVisible();
 		ImGui::SetWindowFocus();
 		mScrollToCursor = false;
+		mScrollToCursor_CursorLineOnPage = -1;
 	}
 }
 
@@ -1394,13 +1396,13 @@ void TextEditor::SetColorizerEnable(bool aValue)
 	mColorizerEnabled = aValue;
 }
 
-void TextEditor::SetCursorPosition(const Coordinates & aPosition)
+void TextEditor::SetCursorPosition(const Coordinates & aPosition, int cursorLineOnPage)
 {
 	if (mState.mCursorPosition != aPosition)
 	{
 		mState.mCursorPosition = aPosition;
 		mCursorPositionChanged = true;
-		EnsureCursorVisible();
+		EnsureCursorVisible(cursorLineOnPage);
 	}
 }
 
@@ -2418,11 +2420,12 @@ float TextEditor::TextDistanceToLineStart(const Coordinates& aFrom) const
 	return distance;
 }
 
-void TextEditor::EnsureCursorVisible()
+void TextEditor::EnsureCursorVisible(int cursorLineOnPage)
 {
 	if (!mWithinRender)
 	{
 		mScrollToCursor = true;
+        mScrollToCursor_CursorLineOnPage = cursorLineOnPage;
 		return;
 	}
 
@@ -2441,10 +2444,17 @@ void TextEditor::EnsureCursorVisible()
 	auto pos = GetActualCursorCoordinates();
 	auto len = TextDistanceToLineStart(pos);
 
-	if (pos.mLine < top)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine - 1) * mCharAdvance.y));
-	if (pos.mLine > bottom - 4)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + 4) * mCharAdvance.y - height));
+	if (mScrollToCursor_CursorLineOnPage >= 0)
+    {
+        ImGui::SetScrollY(std::max(0.0f, (pos.mLine - mScrollToCursor_CursorLineOnPage) * mCharAdvance.y));
+    }
+    else
+    {
+        if (pos.mLine < top)
+            ImGui::SetScrollY(std::max(0.0f, (pos.mLine - 1) * mCharAdvance.y));
+        if (pos.mLine > bottom - 4)
+            ImGui::SetScrollY(std::max(0.0f, (pos.mLine + 4) * mCharAdvance.y - height));
+    }
 	if (len + mTextStart < left + 4)
 		ImGui::SetScrollX(std::max(0.0f, len + mTextStart - 4));
 	if (len + mTextStart > right - 4)
