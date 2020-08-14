@@ -154,7 +154,7 @@ public:
 	{
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
-		typedef bool(*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
+		typedef bool(*TokenizeCallback)(const char* in_begin, const char* in_end, const char*& out_begin, const char*& out_end, PaletteIndex& paletteIndex);
 
 		LanguageDefinition()
 			: mPreprocChar('#'), mAutoIndentation(true), mTokenize(nullptr), mCaseSensitive(true)
@@ -218,13 +218,13 @@ public:
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
 	void SetCursorPosition(const Coordinates& aPosition);
 
-	inline void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
+	inline void SetHandleMouseInputs(bool aValue) { mHandleMouseInputs = aValue; }
 	inline bool IsHandleMouseInputsEnabled() const { return mHandleKeyboardInputs; }
 
-	inline void SetHandleKeyboardInputs (bool aValue){ mHandleKeyboardInputs = aValue;}
+	inline void SetHandleKeyboardInputs(bool aValue) { mHandleKeyboardInputs = aValue; }
 	inline bool IsHandleKeyboardInputsEnabled() const { return mHandleKeyboardInputs; }
 
-	inline void SetImGuiChildIgnored    (bool aValue){ mIgnoreImGuiChild     = aValue;}
+	inline void SetImGuiChildIgnored(bool aValue) { mIgnoreImGuiChild = aValue; }
 	inline bool IsImGuiChildIgnored() const { return mIgnoreImGuiChild; }
 
 	inline void SetShowWhitespaces(bool aValue) { mShowWhitespaces = aValue; }
@@ -297,16 +297,15 @@ private:
 		void Undo(TextEditor* aEditor);
 		void Redo(TextEditor* aEditor);
 
-		std::string mAdded;
+
 		Coordinates mAddedStart;
 		Coordinates mAddedEnd;
-
-		std::string mRemoved;
 		Coordinates mRemovedStart;
 		Coordinates mRemovedEnd;
-
 		EditorState mBefore;
 		EditorState mAfter;
+		std::string mAdded;
+		std::string mRemoved;
 	};
 
 	typedef std::vector<UndoRecord> UndoBuffer;
@@ -348,6 +347,7 @@ private:
 	void HandleMouseInputs();
 	void Render();
 
+private:
 	bool mOverwrite;
 	bool mReadOnly;
 	bool mWithinRender;
@@ -371,14 +371,14 @@ private:
 	float mLastClick;
 	uint64_t mStartTime;
 	ImVec2 mCharAdvance;
-	RegexList mRegexList;
-	Breakpoints mBreakpoints;
-	ErrorMarkers mErrorMarkers;
 	Coordinates mInteractiveStart, mInteractiveEnd;
 	EditorState mState;
+	ErrorMarkers mErrorMarkers;
 	Lines mLines;
+	RegexList mRegexList;
 	UndoBuffer mUndoBuffer;
 	std::string mLineBuffer;
+	Breakpoints mBreakpoints;
 	Palette mPaletteBase;
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
