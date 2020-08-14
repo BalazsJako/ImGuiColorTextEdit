@@ -48,14 +48,14 @@ public:
 
 	struct Breakpoint
 	{
-		int mLine;
-		bool mEnabled;
-		std::string mCondition;
-
 		Breakpoint()
 			: mLine(-1)
 			, mEnabled(false)
 		{}
+
+		bool mEnabled;
+		int mLine;
+		std::string mCondition;
 	};
 
 	// Represents a character coordinate from the user's point of view,
@@ -67,7 +67,6 @@ public:
 	// because it is rendered as "    ABC" on the screen.
 	struct Coordinates
 	{
-		int mLine, mColumn;
 		Coordinates() : mLine(0), mColumn(0) {}
 		Coordinates(int aLine, int aColumn) : mLine(aLine), mColumn(aColumn)
 		{
@@ -117,6 +116,9 @@ public:
 				return mLine > o.mLine;
 			return mColumn >= o.mColumn;
 		}
+
+
+		int mLine, mColumn;
 	};
 
 	struct Identifier
@@ -135,8 +137,8 @@ public:
 
 	struct Glyph
 	{
-		Char mChar;
 		PaletteIndex mColorIndex = PaletteIndex::Default;
+		Char mChar;
 		bool mComment : 1;
 		bool mMultiLineComment : 1;
 		bool mPreprocessor : 1;
@@ -154,20 +156,6 @@ public:
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
 		typedef bool(*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
 
-		std::string mName;
-		Keywords mKeywords;
-		Identifiers mIdentifiers;
-		Identifiers mPreprocIdentifiers;
-		std::string mCommentStart, mCommentEnd, mSingleLineComment;
-		char mPreprocChar;
-		bool mAutoIndentation;
-
-		TokenizeCallback mTokenize;
-
-		TokenRegexStrings mTokenRegexStrings;
-
-		bool mCaseSensitive;
-
 		LanguageDefinition()
 			: mPreprocChar('#'), mAutoIndentation(true), mTokenize(nullptr), mCaseSensitive(true)
 		{
@@ -180,6 +168,18 @@ public:
 		static const LanguageDefinition& SQL();
 		static const LanguageDefinition& AngelScript();
 		static const LanguageDefinition& Lua();
+
+
+		bool mCaseSensitive;
+		bool mAutoIndentation;
+		char mPreprocChar;
+		TokenizeCallback mTokenize;
+		Keywords mKeywords;
+		TokenRegexStrings mTokenRegexStrings;
+		Identifiers mIdentifiers;
+		Identifiers mPreprocIdentifiers;
+		std::string mName;
+		std::string mCommentStart, mCommentEnd, mSingleLineComment;
 	};
 
 	TextEditor();
@@ -348,13 +348,6 @@ private:
 	void HandleMouseInputs();
 	void Render();
 
-	float mLineSpacing;
-	Lines mLines;
-	EditorState mState;
-	UndoBuffer mUndoBuffer;
-	int mUndoIndex;
-
-	int mTabSize;
 	bool mOverwrite;
 	bool mReadOnly;
 	bool mWithinRender;
@@ -362,28 +355,31 @@ private:
 	bool mScrollToTop;
 	bool mTextChanged;
 	bool mColorizerEnabled;
-	float mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
-	int  mLeftMargin;
-	bool mCursorPositionChanged;
-	int mColorRangeMin, mColorRangeMax;
-	SelectionMode mSelectionMode;
 	bool mHandleKeyboardInputs;
 	bool mHandleMouseInputs;
 	bool mIgnoreImGuiChild;
 	bool mShowWhitespaces;
-
+	bool mCursorPositionChanged;
+	bool mCheckComments;
+	int  mLeftMargin;
+	int mColorRangeMin, mColorRangeMax;
+	int mUndoIndex;
+	int mTabSize;
+	SelectionMode mSelectionMode;
+	float mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
+	float mLineSpacing;
+	float mLastClick;
+	uint64_t mStartTime;
+	ImVec2 mCharAdvance;
+	RegexList mRegexList;
+	Breakpoints mBreakpoints;
+	ErrorMarkers mErrorMarkers;
+	Coordinates mInteractiveStart, mInteractiveEnd;
+	EditorState mState;
+	Lines mLines;
+	UndoBuffer mUndoBuffer;
+	std::string mLineBuffer;
 	Palette mPaletteBase;
 	Palette mPalette;
 	LanguageDefinition mLanguageDefinition;
-	RegexList mRegexList;
-
-	bool mCheckComments;
-	Breakpoints mBreakpoints;
-	ErrorMarkers mErrorMarkers;
-	ImVec2 mCharAdvance;
-	Coordinates mInteractiveStart, mInteractiveEnd;
-	std::string mLineBuffer;
-	uint64_t mStartTime;
-
-	float mLastClick;
 };
