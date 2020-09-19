@@ -9,6 +9,10 @@
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h" // for imGui::GetCurrentWindow()
 
+#ifndef isascii
+#define isascii(a) ((unsigned)(a) < 128)
+#endif
+
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML
 
@@ -1081,7 +1085,7 @@ void TextEditor::Render()
 		}
 
 		// Draw a tooltip on known identifiers/preprocessor symbols
-		if (ImGui::IsMousePosValid())
+		if (ImGui::IsMousePosValid() && ImGui::IsWindowHovered())
 		{
 			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
 			if (!id.empty())
