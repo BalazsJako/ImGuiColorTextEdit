@@ -2331,7 +2331,8 @@ void TextEditor::ColorizeInternal()
 
 						if (singleStartStr.size() > 0 &&
 							currentIndex + singleStartStr.size() <= line.size() &&
-							equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.size(), pred))
+							equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.size(), pred) &&
+							!equals(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
 						{
 							withinSingleLineComment = true;
 						}
