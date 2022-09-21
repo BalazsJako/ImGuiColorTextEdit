@@ -751,10 +751,10 @@ void TextEditor::HandleKeyboardInputs()
 			MoveHome(shift);
 		else if (!alt && !ctrl && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_End)))
 			MoveEnd(shift);
-		else if (!IsReadOnly() && !alt && !ctrl && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete)))
-			Delete();
-		else if (!IsReadOnly() && !alt && !ctrl && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
-			Backspace();
+		else if (!IsReadOnly() && !alt && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete)))
+			Delete(ctrl);
+		else if (!IsReadOnly() && !alt && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
+			Backspace(ctrl);
 		else if (!alt && !ctrl && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Insert)))
 			mOverwrite ^= true;
 		else if (isCtrlOnly && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Insert)))
@@ -1796,7 +1796,7 @@ void TextEditor::MoveEnd(bool aSelect)
 	}
 }
 
-void TextEditor::Delete()
+void TextEditor::Delete(bool aWordMode)
 {
 	assert(!mReadOnly);
 
@@ -1835,14 +1835,26 @@ void TextEditor::Delete()
 		}
 		else
 		{
-			auto cindex = GetCharacterIndex(pos);
-			u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
-			u.mRemovedEnd.mColumn++;
-			u.mRemoved = GetText(u.mRemovedStart, u.mRemovedEnd);
+			if (aWordMode)
+			{
+				Coordinates end = FindWordEnd(mState.mCursorPosition);
+				u.mRemoved = GetText(mState.mCursorPosition, end);
+				u.mRemovedStart = mState.mCursorPosition;
+				u.mRemovedEnd = end;
+				DeleteRange(mState.mCursorPosition, end);
+				int charactersDeleted = end.mColumn - mState.mCursorPosition.mColumn;
+			}
+			else
+			{
+				auto cindex = GetCharacterIndex(pos);
+				u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
+				u.mRemovedEnd.mColumn++;
+				u.mRemoved = GetText(u.mRemovedStart, u.mRemovedEnd);
 
-			auto d = UTF8CharLength(line[cindex].mChar);
-			while (d-- > 0 && cindex < (int)line.size())
-				line.erase(line.begin() + cindex);
+				auto d = UTF8CharLength(line[cindex].mChar);
+				while (d-- > 0 && cindex < (int)line.size())
+					line.erase(line.begin() + cindex);
+			}
 		}
 
 		mTextChanged = true;
@@ -1854,7 +1866,7 @@ void TextEditor::Delete()
 	AddUndo(u);
 }
 
-void TextEditor::Backspace()
+void TextEditor::Backspace(bool aWordMode)
 {
 	assert(!mReadOnly);
 
@@ -1903,26 +1915,40 @@ void TextEditor::Backspace()
 		else
 		{
 			auto& line = mLines[mState.mCursorPosition.mLine];
-			auto cindex = GetCharacterIndex(pos) - 1;
-			auto cend = cindex + 1;
-			while (cindex > 0 && IsUTFSequence(line[cindex].mChar))
-				--cindex;
 
-			//if (cindex > 0 && UTF8CharLength(line[cindex].mChar) > 1)
-			//	--cindex;
-
-			u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
-			--u.mRemovedStart.mColumn;
-
-			if (line[cindex].mChar == '\t')
-				mState.mCursorPosition.mColumn -= mTabSize;
-			else
-				--mState.mCursorPosition.mColumn;
-
-			while (cindex < line.size() && cend-- > cindex)
+			if (aWordMode)
 			{
-				u.mRemoved += line[cindex].mChar;
-				line.erase(line.begin() + cindex);
+				Coordinates start = FindWordStart(mState.mCursorPosition - Coordinates(0, 1));
+				u.mRemoved = GetText(start, mState.mCursorPosition);
+				u.mRemovedStart = start;
+				u.mRemovedEnd = mState.mCursorPosition;
+				DeleteRange(start, mState.mCursorPosition);
+				int charactersDeleted = mState.mCursorPosition.mColumn - start.mColumn;
+				mState.mCursorPosition.mColumn -= charactersDeleted;
+			}
+			else
+			{
+				auto cindex = GetCharacterIndex(pos) - 1;
+				auto cend = cindex + 1;
+				while (cindex > 0 && IsUTFSequence(line[cindex].mChar))
+					--cindex;
+
+				//if (cindex > 0 && UTF8CharLength(line[cindex].mChar) > 1)
+				//	--cindex;
+
+				u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
+				--u.mRemovedStart.mColumn;
+
+				if (line[cindex].mChar == '\t')
+					mState.mCursorPosition.mColumn -= mTabSize;
+				else
+					--mState.mCursorPosition.mColumn;
+
+				while (cindex < line.size() && cend-- > cindex)
+				{
+					u.mRemoved += line[cindex].mChar;
+					line.erase(line.begin() + cindex);
+				}
 			}
 		}
 
