@@ -333,7 +333,7 @@ private:
 	void DeleteRange(const Coordinates& aStart, const Coordinates& aEnd);
 	int InsertTextAt(Coordinates& aWhere, const char* aValue);
 	void AddUndo(UndoRecord& aValue);
-	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition, bool aInsertionMode = false) const;
+	Coordinates ScreenPosToCoordinates(const ImVec2& aPosition, bool aInsertionMode = false, bool* isOverLineNumber = nullptr) const;
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
 	Coordinates FindNextWord(const Coordinates& aFrom) const;

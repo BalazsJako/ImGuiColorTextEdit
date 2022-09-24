@@ -322,10 +322,14 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 	++mUndoIndex;
 }
 
-TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition, bool aInsertionMode) const
+TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition, bool aInsertionMode, bool* isOverLineNumber) const
 {
 	ImVec2 origin = ImGui::GetCursorScreenPos();
 	ImVec2 local(aPosition.x - origin.x + 3.0f, aPosition.y - origin.y);
+
+	if (isOverLineNumber != nullptr)
+		*isOverLineNumber = local.x < mTextStart;
+
 	float spaceSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, " ").x;
 
 	int lineNo = std::max(0, (int)floor(local.y / mCharAdvance.y));
@@ -852,8 +856,11 @@ void TextEditor::HandleMouseInputs()
 			*/
 			else if (click)
 			{
-				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
-				if (ctrl)
+				bool isOverLineNumber;
+				mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite, &isOverLineNumber);
+				if (isOverLineNumber)
+					mSelectionMode = SelectionMode::Line;
+				else if (ctrl)
 					mSelectionMode = SelectionMode::Word;
 				else
 					mSelectionMode = SelectionMode::Normal;
