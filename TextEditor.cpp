@@ -897,7 +897,7 @@ void TextEditor::UpdatePalette()
 	/* Update palette with the current alpha from style */
 	for (int i = 0; i < (int)PaletteIndex::Max; ++i)
 	{
-		auto color = ImGui::ColorConvertU32ToFloat4(mPaletteBase[i]);
+		auto color = U32ColorToVec4(mPaletteBase[i]);
 		color.w *= ImGui::GetStyle().Alpha;
 		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
 	}
@@ -2147,28 +2147,28 @@ void TextEditor::Redo(int aSteps)
 const TextEditor::Palette & TextEditor::GetDarkPalette()
 {
 	const static Palette p = { {
-			0xffb0b0b0,	// Default
-			0xffd69c56,	// Keyword
-			0xff00ff00,	// Number
-			0xff7070e0,	// String
-			0xff70a0e0, // Char literal
+			0xb0b0b0ff,	// Default
+			0x569cd6ff,	// Keyword
+			0x00ff00ff,	// Number
+			0xe07070ff,	// String
+			0xe0a070ff, // Char literal
 			0xffffffff, // Punctuation
-			0xff408080,	// Preprocessor
-			0xffaaaaaa, // Identifier
-			0xff9bc64d, // Known identifier
-			0xffc040a0, // Preproc identifier
-			0xff206020, // Comment (single line)
-			0xff406020, // Comment (multi line)
-			0xff101010, // Background
-			0xffe0e0e0, // Cursor
-			0x80a06020, // Selection
-			0x800020ff, // ErrorMarker
+			0x808040ff,	// Preprocessor
+			0xaaaaaaff, // Identifier
+			0x4dc69bff, // Known identifier
+			0xa040c0ff, // Preproc identifier
+			0x206020ff, // Comment (single line)
+			0x206040ff, // Comment (multi line)
+			0x101010ff, // Background
+			0xe0e0e0ff, // Cursor
+			0x2060a080, // Selection
+			0xff200080, // ErrorMarker
 			0x90909090, // ControlCharacter
-			0x40f08000, // Breakpoint
-			0xff707000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40a0a0a0, // Current line edge
+			0x0080f040, // Breakpoint
+			0x007070ff, // Line number
+			0x00000040, // Current line fill
+			0x80808040, // Current line fill (inactive)
+			0xa0a0a040, // Current line edge
 		} };
 	return p;
 }
@@ -2176,28 +2176,28 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 const TextEditor::Palette & TextEditor::GetLightPalette()
 {
 	const static Palette p = { {
-			0xff404040,	// None
-			0xffff0c06,	// Keyword	
-			0xff008000,	// Number
-			0xff2020a0,	// String
-			0xff304070, // Char literal
-			0xff000000, // Punctuation
-			0xff406060,	// Preprocessor
-			0xff404040, // Identifier
-			0xff606010, // Known identifier
-			0xffc040a0, // Preproc identifier
-			0xff205020, // Comment (single line)
-			0xff405020, // Comment (multi line)
+			0x404040ff,	// None
+			0x060cffff,	// Keyword	
+			0x008000ff,	// Number
+			0xa02020ff,	// String
+			0x704030ff, // Char literal
+			0x000000ff, // Punctuation
+			0x606040ff,	// Preprocessor
+			0x404040ff, // Identifier
+			0x106060ff, // Known identifier
+			0xa040c0ff, // Preproc identifier
+			0x205020ff, // Comment (single line)
+			0x205040ff, // Comment (multi line)
 			0xffffffff, // Background
-			0xff000000, // Cursor
-			0x40600000, // Selection
-			0xa00010ff, // ErrorMarker
+			0x000000ff, // Cursor
+			0x00006040, // Selection
+			0xff1000a0, // ErrorMarker
 			0x90909090, // ControlCharacter
-			0x80f08000, // Breakpoint
-			0xff505000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40000000, // Current line edge
+			0x0080f080, // Breakpoint
+			0x005050ff, // Line number
+			0x00000040, // Current line fill
+			0x80808040, // Current line fill (inactive)
+			0x00000040, // Current line edge
 		} };
 	return p;
 }
@@ -2205,27 +2205,27 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 {
 	const static Palette p = { {
-			0xff00ffff,	// None
-			0xffffff00,	// Keyword	
-			0xff00ff00,	// Number
-			0xff808000,	// String
-			0xff808000, // Char literal
+			0xffff00ff,	// None
+			0x00ffffff,	// Keyword	
+			0x00ff00ff,	// Number
+			0x008080ff,	// String
+			0x008080ff, // Char literal
 			0xffffffff, // Punctuation
-			0xff008000,	// Preprocessor
-			0xff00ffff, // Identifier
+			0x008000ff,	// Preprocessor
+			0xffff00ff, // Identifier
 			0xffffffff, // Known identifier
-			0xffff00ff, // Preproc identifier
-			0xff808080, // Comment (single line)
-			0xff404040, // Comment (multi line)
-			0xff800000, // Background
-			0xff0080ff, // Cursor
-			0x80ffff00, // Selection
-			0xa00000ff, // ErrorMarker
-			0x80ff8000, // Breakpoint
-			0xff808000, // Line number
-			0x40000000, // Current line fill
-			0x40808080, // Current line fill (inactive)
-			0x40000000, // Current line edge
+			0xff00ffff, // Preproc identifier
+			0x808080ff, // Comment (single line)
+			0x404040ff, // Comment (multi line)
+			0x000080ff, // Background
+			0xff8000ff, // Cursor
+			0x00ffff80, // Selection
+			0xff0000a0, // ErrorMarker
+			0x0080ff80, // Breakpoint
+			0x008080ff, // Line number
+			0x00000040, // Current line fill
+			0x80808040, // Current line fill (inactive)
+			0x00000040, // Current line edge
 		} };
 	return p;
 }
