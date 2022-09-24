@@ -31,6 +31,7 @@ public:
 		Cursor,
 		Selection,
 		ErrorMarker,
+		ControlCharacter,
 		Breakpoint,
 		LineNumber,
 		CurrentLineFill,
@@ -355,6 +356,7 @@ private:
 
 	void HandleKeyboardInputs();
 	void HandleMouseInputs();
+	void UpdatePalette();
 	void Render();
 
 	float mLineSpacing;

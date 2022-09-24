@@ -892,12 +892,8 @@ void TextEditor::HandleMouseInputs()
 	}
 }
 
-void TextEditor::Render()
+void TextEditor::UpdatePalette()
 {
-	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
-	const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
-	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
-
 	/* Update palette with the current alpha from style */
 	for (int i = 0; i < (int)PaletteIndex::Max; ++i)
 	{
@@ -905,6 +901,13 @@ void TextEditor::Render()
 		color.w *= ImGui::GetStyle().Alpha;
 		mPalette[i] = ImGui::ColorConvertFloat4ToU32(color);
 	}
+}
+
+void TextEditor::Render()
+{
+	/* Compute mCharAdvance regarding to scaled font size (Ctrl + mouse wheel)*/
+	const float fontSize = ImGui::GetFont()->CalcTextSizeA(ImGui::GetFontSize(), FLT_MAX, -1.0f, "#", nullptr, nullptr).x;
+	mCharAdvance = ImVec2(fontSize, ImGui::GetTextLineHeightWithSpacing() * mLineSpacing);
 
 	assert(mLineBuffer.empty());
 
@@ -1097,9 +1100,9 @@ void TextEditor::Render()
 							p4 = ImVec2(x2 - s * 0.2f, y + s * 0.2f);
 						}
 
-						drawList->AddLine(p1, p2, 0x90909090);
-						drawList->AddLine(p2, p3, 0x90909090);
-						drawList->AddLine(p2, p4, 0x90909090);
+						drawList->AddLine(p1, p2, mPalette[(int)PaletteIndex::ControlCharacter]);
+						drawList->AddLine(p2, p3, mPalette[(int)PaletteIndex::ControlCharacter]);
+						drawList->AddLine(p2, p4, mPalette[(int)PaletteIndex::ControlCharacter]);
 					}
 				}
 				else if (glyph.mChar == ' ')
@@ -1184,6 +1187,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	mWithinRender = true;
 	mTextChanged = false;
 	mCursorPositionChanged = false;
+
+	UpdatePalette();
 
 	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImGui::ColorConvertU32ToFloat4(mPalette[(int)PaletteIndex::Background]));
 	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
@@ -2158,6 +2163,7 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 			0xffe0e0e0, // Cursor
 			0x80a06020, // Selection
 			0x800020ff, // ErrorMarker
+			0x90909090, // ControlCharacter
 			0x40f08000, // Breakpoint
 			0xff707000, // Line number
 			0x40000000, // Current line fill
@@ -2186,6 +2192,7 @@ const TextEditor::Palette & TextEditor::GetLightPalette()
 			0xff000000, // Cursor
 			0x40600000, // Selection
 			0xa00010ff, // ErrorMarker
+			0x90909090, // ControlCharacter
 			0x80f08000, // Breakpoint
 			0xff505000, // Line number
 			0x40000000, // Current line fill
