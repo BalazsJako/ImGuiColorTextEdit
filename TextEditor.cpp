@@ -809,9 +809,9 @@ void TextEditor::HandleMouseInputs()
 
 	if (ImGui::IsWindowHovered())
 	{
+		auto click = ImGui::IsMouseClicked(0);
 		if (!shift && !alt)
 		{
-			auto click = ImGui::IsMouseClicked(0);
 			auto doubleClick = ImGui::IsMouseDoubleClicked(0);
 			auto t = ImGui::GetTime();
 			auto tripleClick = click && !doubleClick && (mLastClick != -1.0f && (t - mLastClick) < io.MouseDoubleClickTime);
@@ -876,6 +876,17 @@ void TextEditor::HandleMouseInputs()
 				io.WantCaptureMouse = true;
 				mState.mCursorPosition = mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
 				SetSelection(mInteractiveStart, mInteractiveEnd, mSelectionMode);
+			}
+		}
+		else if (shift)
+		{
+			if (click)
+			{
+				Coordinates newSelectionEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
+				mState.mCursorPosition = newSelectionEnd;
+				SetSelectionEnd(newSelectionEnd);
+				mInteractiveEnd = mState.mSelectionEnd;
+				mInteractiveStart = mState.mSelectionStart;
 			}
 		}
 	}
