@@ -1658,7 +1658,7 @@ void TextEditor::MoveLeft(int aAmount, bool aSelect, bool aWordMode)
 	}
 	else
 	{
-		if (HasSelection())
+		if (HasSelection() && !aWordMode)
 			mState.mCursorPosition = mInteractiveStart;
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
 	}
@@ -1713,7 +1713,7 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 	}
 	else
 	{
-		if (HasSelection())
+		if (HasSelection() && !aWordMode)
 			mState.mCursorPosition = mInteractiveEnd;
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
 	}
