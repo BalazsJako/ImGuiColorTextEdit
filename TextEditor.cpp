@@ -835,6 +835,8 @@ void TextEditor::HandleMouseInputs()
 				if (!ctrl)
 				{
 					mState.mCursorPosition = mInteractiveStart = mInteractiveEnd = SanitizeCoordinates(ScreenPosToCoordinates(ImGui::GetMousePos()));
+					mInteractiveStart = FindWordStart(mState.mCursorPosition);
+					mState.mCursorPosition = mInteractiveEnd = FindWordEnd(mState.mCursorPosition);
 					if (mSelectionMode == SelectionMode::Line)
 						mSelectionMode = SelectionMode::Normal;
 					else
@@ -1477,14 +1479,8 @@ void TextEditor::SetSelection(const Coordinates & aStart, const Coordinates & aE
 	switch (aMode)
 	{
 	case TextEditor::SelectionMode::Normal:
-		break;
 	case TextEditor::SelectionMode::Word:
-	{
-		mState.mSelectionStart = FindWordStart(mState.mSelectionStart);
-		if (!IsOnWordBoundary(mState.mSelectionEnd))
-			mState.mSelectionEnd = FindWordEnd(FindWordStart(mState.mSelectionEnd));
 		break;
-	}
 	case TextEditor::SelectionMode::Line:
 	{
 		const auto lineNo = mState.mSelectionEnd.mLine;
@@ -1661,7 +1657,11 @@ void TextEditor::MoveLeft(int aAmount, bool aSelect, bool aWordMode)
 		}
 	}
 	else
+	{
+		if (HasSelection())
+			mState.mCursorPosition = mInteractiveStart;
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
+	}
 	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode ? SelectionMode::Word : SelectionMode::Normal);
 
 	EnsureCursorVisible();
@@ -1712,7 +1712,11 @@ void TextEditor::MoveRight(int aAmount, bool aSelect, bool aWordMode)
 		}
 	}
 	else
+	{
+		if (HasSelection())
+			mState.mCursorPosition = mInteractiveEnd;
 		mInteractiveStart = mInteractiveEnd = mState.mCursorPosition;
+	}
 	SetSelection(mInteractiveStart, mInteractiveEnd, aSelect && aWordMode ? SelectionMode::Word : SelectionMode::Normal);
 
 	EnsureCursorVisible();
