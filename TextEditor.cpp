@@ -50,7 +50,7 @@ TextEditor::TextEditor()
 	, mStartTime(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count())
 	, mLastClick(-1.0f)
 {
-	SetPalette(GetDarkPalette());
+	SetPalette(GetMarianaPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
 	mLines.push_back(Line());
 }
@@ -2169,6 +2169,35 @@ const TextEditor::Palette & TextEditor::GetDarkPalette()
 			0x00000040, // Current line fill
 			0x80808040, // Current line fill (inactive)
 			0xa0a0a040, // Current line edge
+		} };
+	return p;
+}
+
+const TextEditor::Palette& TextEditor::GetMarianaPalette()
+{
+	const static Palette p = { {
+			0xffffffff,	// Default
+			0xc695c6ff,	// Keyword
+			0xf9ae58ff,	// Number
+			0x99c794ff,	// String
+			0xe0a070ff, // Char literal
+			0x5fb4b4ff, // Punctuation
+			0x808040ff,	// Preprocessor
+			0xffffffff, // Identifier
+			0x4dc69bff, // Known identifier
+			0xe0a0ffff, // Preproc identifier
+			0xa6acb9ff, // Comment (single line)
+			0xa6acb9ff, // Comment (multi line)
+			0x303841ff, // Background
+			0xe0e0e0ff, // Cursor
+			0x4e5a6580, // Selection
+			0xec5f6680, // ErrorMarker
+			0xffffff30, // ControlCharacter
+			0x0080f040, // Breakpoint
+			0xffffffb0, // Line number
+			0x4e5a6580, // Current line fill
+			0x4e5a6530, // Current line fill (inactive)
+			0x4e5a65b0, // Current line edge
 		} };
 	return p;
 }
