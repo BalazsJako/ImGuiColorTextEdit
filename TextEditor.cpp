@@ -648,6 +648,8 @@ void TextEditor::RemoveLine(int aIndex)
 	assert(!mLines.empty());
 
 	mTextChanged = true;
+
+	OnLineDeleted(aIndex);
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -665,6 +667,8 @@ TextEditor::Line& TextEditor::InsertLine(int aIndex)
 	for (auto i : mBreakpoints)
 		btmp.insert(i >= aIndex ? i + 1 : i);
 	mBreakpoints = std::move(btmp);
+
+	OnLineAdded(aIndex);
 
 	return result;
 }
@@ -1441,7 +1445,6 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 			line.erase(line.begin() + cindex, line.begin() + line.size());
 			SetCursorPosition(Coordinates(coord.mLine + 1, GetCharacterColumn(coord.mLine + 1, (int)whitespaceSize)), c);
 			added.mText = (char)aChar;
-			OnLineAdded(coord.mLine + 1);
 		}
 		else
 		{
@@ -1964,7 +1967,7 @@ void TextEditor::Delete(bool aWordMode)
 	else
 	{
 		std::vector<Coordinates> positions;
-		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		for (int c = mState.mCurrentCursor; c > -1; c--)
 		{
 			auto pos = GetActualCursorCoordinates(c);
 			positions.push_back(pos);
@@ -1983,7 +1986,6 @@ void TextEditor::Delete(bool aWordMode)
 				auto& nextLine = mLines[pos.mLine + 1];
 				line.insert(line.end(), nextLine.begin(), nextLine.end());
 				RemoveLine(pos.mLine + 1);
-				OnLineDeleted(pos.mLine);
 			}
 			else
 			{
@@ -2043,7 +2045,7 @@ void TextEditor::Backspace(bool aWordMode)
 	}
 	else
 	{
-		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		for (int c = mState.mCurrentCursor; c > -1; c--)
 		{
 			auto pos = GetActualCursorCoordinates(c);
 			SetCursorPosition(pos, c);
