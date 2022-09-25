@@ -188,6 +188,35 @@ public:
 		static const LanguageDefinition& Lua();
 	};
 
+	struct ClipboardInfo
+	{
+		std::string text = "";
+		std::vector<int> dividers;
+		std::string GetText(int index = 0)
+		{
+			if (dividers.size() == 0)
+				return text;
+
+			if (index == 0)
+				return text.substr(0, dividers[0]);
+			if (index >= dividers.size())
+				return text.substr(dividers[dividers.size() - 1] + 1);
+			else
+			{
+				int q = dividers[index - 1] + 1;
+				int p = dividers[index];
+				return text.substr(q, p - q);
+			}
+		}
+	};
+
+	struct Selection
+	{
+		std::string mText;
+		TextEditor::Coordinates mStart;
+		TextEditor::Coordinates mEnd;
+	};
+
 	TextEditor();
 	~TextEditor();
 
@@ -207,7 +236,8 @@ public:
 	void SetTextLines(const std::vector<std::string>& aLines);
 	std::vector<std::string> GetTextLines() const;
 
-	std::string GetSelectedText() const;
+	ClipboardInfo GetClipboardInfo() const;
+	std::vector<Selection> GetSelectedText() const;
 	std::string GetCurrentLineText()const;
 
 	int GetTotalLines() const { return (int)mLines.size(); }
@@ -222,7 +252,24 @@ public:
 	void SetColorizerEnable(bool aValue);
 
 	Coordinates GetCursorPosition() const { return GetActualCursorCoordinates(); }
-	void SetCursorPosition(const Coordinates& aPosition);
+	void SetCursorPosition(const Coordinates& aPosition, int aCursor = -1);
+
+	inline void OnLineDeleted(int lineNumber)
+	{
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		{
+			if (mState.mCursors[c].mCursorPosition.mLine > lineNumber)
+				mState.mCursors[c].mCursorPosition.mLine--;
+		}
+	}
+	inline void OnLineAdded(int lineNumber)
+	{
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		{
+			if (mState.mCursors[c].mCursorPosition.mLine > lineNumber)
+				mState.mCursors[c].mCursorPosition.mLine++;
+		}
+	}
 
 	inline void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
 	inline bool IsHandleMouseInputsEnabled() const { return mHandleMouseInputs; }
@@ -263,9 +310,9 @@ public:
 	void MoveHome(bool aSelect = false);
 	void MoveEnd(bool aSelect = false);
 
-	void SetSelectionStart(const Coordinates& aPosition);
-	void SetSelectionEnd(const Coordinates& aPosition);
-	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal);
+	void SetSelectionStart(const Coordinates& aPosition, int aCursor = -1);
+	void SetSelectionEnd(const Coordinates& aPosition, int aCursor = -1);
+	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal, int aCursor = -1);
 	void SelectWordUnderCursor();
 	void SelectAll();
 	bool HasSelection() const;
@@ -285,14 +332,28 @@ public:
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
 
-private:
+public:
 	typedef std::vector<std::pair<std::regex, PaletteIndex>> RegexList;
 
+	struct Cursor
+	{
+		Coordinates mCursorPosition = { 0, 0 };
+		Coordinates mSelectionStart = { 0,0 };
+		Coordinates mSelectionEnd = { 0,0 };
+		Coordinates mInteractiveStart = { 0,0 };
+		Coordinates mInteractiveEnd = { 0,0 };
+	};
+
+	//typedef std::vector<Cursor> EditorState;
 	struct EditorState
 	{
-		Coordinates mSelectionStart;
-		Coordinates mSelectionEnd;
-		Coordinates mCursorPosition;
+		int mCurrentCursor = 0;
+		std::vector<Cursor> mCursors = { {{0,0}, {0,0}, {0,0}, {0,0}} };
+		void AddCursor()
+		{
+			mCurrentCursor++;
+			mCursors.resize(mCurrentCursor + 1);
+		}
 	};
 
 	class UndoRecord
@@ -302,27 +363,23 @@ private:
 		~UndoRecord() {}
 
 		UndoRecord(
-			const std::string& aAdded,
-			const TextEditor::Coordinates aAddedStart,
-			const TextEditor::Coordinates aAddedEnd,
-
-			const std::string& aRemoved,
-			const TextEditor::Coordinates aRemovedStart,
-			const TextEditor::Coordinates aRemovedEnd,
-
+			const std::vector<Selection>& aAdded,
+			const std::vector<Selection>& aRemoved,
 			TextEditor::EditorState& aBefore,
 			TextEditor::EditorState& aAfter);
 
 		void Undo(TextEditor* aEditor);
 		void Redo(TextEditor* aEditor);
 
-		std::string mAdded;
-		Coordinates mAddedStart;
-		Coordinates mAddedEnd;
+		std::vector<Selection> mAdded;
+		//std::string mAdded;
+		//Coordinates mAddedStart;
+		//Coordinates mAddedEnd;
 
-		std::string mRemoved;
-		Coordinates mRemovedStart;
-		Coordinates mRemovedEnd;
+		std::vector<Selection> mRemoved;
+		//std::string mRemoved;
+		//Coordinates mRemovedStart;
+		//Coordinates mRemovedEnd;
 
 		EditorState mBefore;
 		EditorState mAfter;
@@ -335,10 +392,10 @@ private:
 	void ColorizeRange(int aFromLine = 0, int aToLine = 0);
 	void ColorizeInternal();
 	float TextDistanceToLineStart(const Coordinates& aFrom) const;
-	void EnsureCursorVisible();
+	void EnsureCursorVisible(int aCursor = -1);
 	int GetPageSize() const;
 	std::string GetText(const Coordinates& aStart, const Coordinates& aEnd) const;
-	Coordinates GetActualCursorCoordinates() const;
+	Coordinates GetActualCursorCoordinates(int aCursor = -1) const;
 	Coordinates SanitizeCoordinates(const Coordinates& aValue) const;
 	void Advance(Coordinates& aCoordinates) const;
 	void DeleteRange(const Coordinates& aStart, const Coordinates& aEnd);
@@ -358,7 +415,7 @@ private:
 	Line& InsertLine(int aIndex);
 	void EnterCharacter(ImWchar aChar, bool aShift);
 	void Backspace(bool aWordMode = false);
-	void DeleteSelection();
+	void DeleteSelection(const Selection& selection);
 	void DeleteCurrentLine();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
@@ -403,9 +460,10 @@ private:
 	Breakpoints mBreakpoints;
 	ErrorMarkers mErrorMarkers;
 	ImVec2 mCharAdvance;
-	Coordinates mInteractiveStart, mInteractiveEnd;
 	std::string mLineBuffer;
 	uint64_t mStartTime;
 
 	float mLastClick;
+
+	ClipboardInfo mClipboardInfo;
 };
