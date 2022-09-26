@@ -8,7 +8,6 @@
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h" // for imGui::GetCurrentWindow()
-#include <iostream>
 
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML
@@ -256,7 +255,7 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 			firstLine.insert(firstLine.end(), lastLine.begin(), lastLine.end());
 
 		if (aStart.mLine < aEnd.mLine)
-			RemoveLine(aStart.mLine + 1, aEnd.mLine + 1);
+			RemoveLines(aStart.mLine + 1, aEnd.mLine + 1);
 	}
 
 	mTextChanged = true;
@@ -589,7 +588,7 @@ bool TextEditor::IsOnWordBoundary(const Coordinates & aAt) const
 	return isspace(line[cindex].mChar) != isspace(line[cindex - 1].mChar);
 }
 
-void TextEditor::RemoveLine(int aStart, int aEnd)
+void TextEditor::RemoveLines(int aStart, int aEnd)
 {
 	assert(!mReadOnly);
 	assert(aEnd >= aStart);
@@ -618,6 +617,8 @@ void TextEditor::RemoveLine(int aStart, int aEnd)
 	assert(!mLines.empty());
 
 	mTextChanged = true;
+
+	OnLinesDeleted(aStart, aEnd);
 }
 
 void TextEditor::RemoveLine(int aIndex)
@@ -1323,14 +1324,12 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 
 	if (HasSelection())
 	{
-		auto selections = GetSelectedText();
-		for (int i = selections.size() - 1; i > -1; i--)
+		for (int c = mState.mCurrentCursor; c > -1; c--)
 		{
-			if (aChar == '\t' && selections[i].mStart.mLine != selections[i].mEnd.mLine)
+			if (aChar == '\t' && mState.mCursors[c].mSelectionStart.mLine != mState.mCursors[c].mSelectionEnd.mLine)
 			{
-
-				auto start = selections[i].mStart;
-				auto end = selections[i].mEnd;
+				auto start = mState.mCursors[c].mSelectionStart;
+				auto end = mState.mCursors[c].mSelectionEnd;
 				auto originalEnd = end;
 
 				if (start > end)
@@ -1356,6 +1355,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 					if (aShift)
 					{
 						if (!line.empty())
+
 						{
 							if (line.front().mChar == '\t')
 							{
@@ -1400,8 +1400,8 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 					u.mAdded.push_back({ addedText , start, rangeEnd });
 					u.mAfter = mState;
 
-					mState.mCursors[mState.mCurrentCursor].mSelectionStart = start;
-					mState.mCursors[mState.mCurrentCursor].mSelectionEnd = end;
+					mState.mCursors[c].mSelectionStart = start;
+					mState.mCursors[c].mSelectionEnd = end;
 					AddUndo(u);
 
 					mTextChanged = true;
@@ -1413,8 +1413,8 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 			} // c == '\t'
 			else
 			{
-				u.mRemoved.push_back({ selections[i] });
-				DeleteSelection(selections[i]);
+				u.mRemoved.push_back({ GetSelectedText(), mState.mCursors[c].mSelectionStart, mState.mCursors[mState.mCurrentCursor].mSelectionEnd });
+				DeleteSelection(c);
 			}
 		}
 	} // HasSelection
@@ -1600,21 +1600,23 @@ void TextEditor::InsertText(const char* aValue)
 	Colorize(start.mLine - 1, totalLines + 2);
 }
 
-void TextEditor::DeleteSelection(const Selection& selection)
+void TextEditor::DeleteSelection(int aCursor)
 {
-	assert(selection.mEnd >= selection.mStart);
+	if (aCursor == -1)
+		aCursor = mState.mCurrentCursor;
 
-	if (selection.mEnd == selection.mStart)
+	assert(mState.mCursors[aCursor].mSelectionEnd >= mState.mCursors[aCursor].mSelectionStart);
+
+	if (mState.mCursors[aCursor].mSelectionEnd == mState.mCursors[aCursor].mSelectionStart)
 		return;
 
-	DeleteRange(selection.mStart, selection.mEnd);
+	DeleteRange(mState.mCursors[aCursor].mSelectionStart, mState.mCursors[aCursor].mSelectionEnd);
 
-	SetSelection(selection.mStart, selection.mStart);
-	SetCursorPosition(selection.mStart);
-	// need to track cursors somehow
-	mState.mCursors[mState.mCurrentCursor].mInteractiveStart = selection.mStart;
-	mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = selection.mEnd;
-	Colorize(selection.mStart.mLine, 1);
+	SetSelection(mState.mCursors[aCursor].mSelectionStart, mState.mCursors[aCursor].mSelectionStart, SelectionMode::Normal, aCursor);
+	SetCursorPosition(mState.mCursors[aCursor].mSelectionStart, aCursor);
+	mState.mCursors[aCursor].mInteractiveStart = mState.mCursors[aCursor].mSelectionStart;
+	mState.mCursors[aCursor].mInteractiveEnd = mState.mCursors[aCursor].mSelectionEnd;
+	Colorize(mState.mCursors[aCursor].mSelectionStart.mLine, 1);
 }
 
 void TextEditor::DeleteCurrentLine()
@@ -1957,11 +1959,10 @@ void TextEditor::Delete(bool aWordMode)
 
 	if (HasSelection())
 	{
-		std::vector<Selection> selections = GetSelectedText();
-		for (int i = selections.size() - 1; i > -1; i--)
+		for (int c = mState.mCurrentCursor; c > -1; c--)
 		{
-			u.mRemoved.push_back({ selections[i].mText, selections[i].mStart, selections[i].mEnd });
-			DeleteSelection(selections[i]);
+			u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
+			DeleteSelection(c);
 		}
 	}
 	else
@@ -2036,11 +2037,10 @@ void TextEditor::Backspace(bool aWordMode)
 
 	if (HasSelection())
 	{
-		std::vector<Selection> selections = GetSelectedText();
-		for (int i = selections.size() - 1; i > -1; i--)
+		for (int c = mState.mCurrentCursor; c > -1; c--)
 		{
-			u.mRemoved.push_back({ selections[i].mText, selections[i].mStart, selections[i].mEnd });
-			DeleteSelection(selections[i]);
+			u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
+			DeleteSelection(c);
 		}
 	}
 	else
@@ -2176,13 +2176,13 @@ void TextEditor::Cut()
 		{
 			UndoRecord u;
 			u.mBefore = mState;
-			std::vector<Selection> selections = GetSelectedText();
-			for (int i = 0; i < selections.size(); i++)
-				u.mRemoved.push_back(selections[i]);
 
 			Copy();
-			for (int i = selections.size() - 1; i > -1; i--)
-				DeleteSelection(selections[i]);
+			for (int c = mState.mCurrentCursor; c > -1; c--)
+			{
+				u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
+				DeleteSelection(c);
+			}
 
 			u.mAfter = mState;
 			AddUndo(u);
@@ -2204,11 +2204,10 @@ void TextEditor::Paste()
 
 		if (HasSelection())
 		{
-			std::vector<Selection> selections = GetSelectedText();
-			for (int i = selections.size() - 1; i > -1; i--)
+			for (int c = 0; c <= mState.mCurrentCursor; c++)
 			{
-				u.mRemoved.push_back({ selections[i].mText, selections[i].mStart, selections[i].mEnd });
-				DeleteSelection(selections[i]);
+				u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
+				DeleteSelection(c);
 			}
 		}
 
@@ -2406,20 +2405,12 @@ TextEditor::ClipboardInfo TextEditor::GetClipboardInfo() const
 	return result;
 }
 
-std::vector<TextEditor::Selection> TextEditor::GetSelectedText() const
+std::string TextEditor::GetSelectedText(int aCursor) const
 {
-	std::vector<Selection> result;
-	for (int c = 0; c <= mState.mCurrentCursor; c++)
-	{
-		if (mState.mCursors[c].mSelectionStart < mState.mCursors[c].mSelectionEnd)
-		{
-			result.emplace_back();
-			result.back().mText = GetText(mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd);
-			result.back().mStart = mState.mCursors[c].mSelectionStart;
-			result.back().mEnd = mState.mCursors[c].mSelectionEnd;
-		}
-	}
-	return result;
+	if (aCursor == -1)
+		aCursor = mState.mCurrentCursor;
+
+	return GetText(mState.mCursors[aCursor].mSelectionStart, mState.mCursors[aCursor].mSelectionEnd);
 }
 
 std::string TextEditor::GetCurrentLineText()const

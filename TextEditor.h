@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 #include <vector>
 #include <array>
@@ -237,7 +238,8 @@ public:
 	std::vector<std::string> GetTextLines() const;
 
 	ClipboardInfo GetClipboardInfo() const;
-	std::vector<Selection> GetSelectedText() const;
+	//std::vector<Selection> GetSelectedText() const;
+	std::string GetSelectedText(int aCursor = -1) const;
 	std::string GetCurrentLineText()const;
 
 	int GetTotalLines() const { return (int)mLines.size(); }
@@ -262,11 +264,19 @@ public:
 				mState.mCursors[c].mCursorPosition.mLine--;
 		}
 	}
-	inline void OnLineAdded(int lineNumber)
+	inline void OnLinesDeleted(int aFirstLineIndex, int aLastLineIndex)
 	{
 		for (int c = 0; c <= mState.mCurrentCursor; c++)
 		{
-			if (mState.mCursors[c].mCursorPosition.mLine > lineNumber)
+			if (mState.mCursors[c].mCursorPosition.mLine > aLastLineIndex)
+				mState.mCursors[c].mCursorPosition.mLine -= aLastLineIndex - aFirstLineIndex;
+		}
+	}
+	inline void OnLineAdded(int aLineIndex)
+	{
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		{
+			if (mState.mCursors[c].mCursorPosition.mLine > aLineIndex)
 				mState.mCursors[c].mCursorPosition.mLine++;
 		}
 	}
@@ -410,12 +420,12 @@ public:
 	int GetLineCharacterCount(int aLine) const;
 	int GetLineMaxColumn(int aLine) const;
 	bool IsOnWordBoundary(const Coordinates& aAt) const;
-	void RemoveLine(int aStart, int aEnd);
+	void RemoveLines(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	Line& InsertLine(int aIndex);
 	void EnterCharacter(ImWchar aChar, bool aShift);
 	void Backspace(bool aWordMode = false);
-	void DeleteSelection(const Selection& selection);
+	void DeleteSelection(int aCursor = -1);
 	void DeleteCurrentLine();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
