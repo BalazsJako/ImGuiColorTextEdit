@@ -2035,12 +2035,19 @@ void TextEditor::Backspace(bool aWordMode)
 				//	--cindex;
 
 				u.mRemovedStart = u.mRemovedEnd = GetActualCursorCoordinates();
-				--u.mRemovedStart.mColumn;
 
 				if (line[cindex].mChar == '\t')
-					mState.mCursorPosition.mColumn -= mTabSize;
+				{
+					int tabStartColumn = GetCharacterColumn(u.mRemovedStart.mLine, cindex);
+					int tabLength = u.mRemovedStart.mColumn - tabStartColumn;
+					mState.mCursorPosition.mColumn -= tabLength;
+					u.mRemovedStart.mColumn -= tabLength;
+				}
 				else
+				{
 					--mState.mCursorPosition.mColumn;
+					--u.mRemovedStart.mColumn;
+				}
 
 				while (cindex < line.size() && cend-- > cindex)
 				{
