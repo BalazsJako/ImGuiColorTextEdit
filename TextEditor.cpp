@@ -228,7 +228,7 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 	if (aEnd == aStart)
 		return;
 
-	auto start = GetCharacterIndex(aStart);
+	auto start = GetCharacterIndexLeftSide(aStart);
 	auto end = GetCharacterIndex(aEnd);
 
 	if (aStart.mLine == aEnd.mLine)
@@ -501,6 +501,34 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 	}
 
 	return at;
+}
+
+int TextEditor::GetCharacterIndexLeftSide(const Coordinates& aCoordinates) const
+{
+	if (aCoordinates.mLine >= mLines.size())
+		return -1;
+
+	auto& line = mLines[aCoordinates.mLine];
+	int c = 0;
+	int i = 0;
+	int tabCoordsLeft = 0;
+
+	for (; i < line.size() && c < aCoordinates.mColumn;)
+	{
+		if (line[i].mChar == '\t')
+		{
+			if (tabCoordsLeft == 0)
+				tabCoordsLeft = mTabSize - (c % mTabSize);
+			if (tabCoordsLeft > 0)
+				tabCoordsLeft--;
+			c++;
+		}
+		else
+			++c;
+		if (tabCoordsLeft == 0)
+			i += UTF8CharLength(line[i].mChar);
+	}
+	return i;
 }
 
 int TextEditor::GetCharacterIndex(const Coordinates& aCoordinates) const
