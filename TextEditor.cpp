@@ -393,7 +393,7 @@ TextEditor::Coordinates TextEditor::FindWordStart(const Coordinates & aFrom) con
 		return at;
 
 	auto& line = mLines[at.mLine];
-	auto cindex = GetCharacterIndex(at);
+	auto cindex = GetCharacterIndexLeftSide(at);
 
 	if (cindex >= (int)line.size())
 		return at;
