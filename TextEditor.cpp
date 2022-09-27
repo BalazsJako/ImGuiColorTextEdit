@@ -231,7 +231,7 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 	if (aEnd == aStart)
 		return;
 
-	auto start = GetCharacterIndex(aStart);
+	auto start = GetCharacterIndexLeftSide(aStart);
 	auto end = GetCharacterIndex(aEnd);
 
 	if (aStart.mLine == aEnd.mLine)
@@ -396,7 +396,7 @@ TextEditor::Coordinates TextEditor::FindWordStart(const Coordinates & aFrom) con
 		return at;
 
 	auto& line = mLines[at.mLine];
-	auto cindex = GetCharacterIndex(at);
+	auto cindex = GetCharacterIndexLeftSide(at);
 
 	if (cindex >= (int)line.size())
 		return at;
@@ -504,6 +504,34 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 	}
 
 	return at;
+}
+
+int TextEditor::GetCharacterIndexLeftSide(const Coordinates& aCoordinates) const
+{
+	if (aCoordinates.mLine >= mLines.size())
+		return -1;
+
+	auto& line = mLines[aCoordinates.mLine];
+	int c = 0;
+	int i = 0;
+	int tabCoordsLeft = 0;
+
+	for (; i < line.size() && c < aCoordinates.mColumn;)
+	{
+		if (line[i].mChar == '\t')
+		{
+			if (tabCoordsLeft == 0)
+				tabCoordsLeft = mTabSize - (c % mTabSize);
+			if (tabCoordsLeft > 0)
+				tabCoordsLeft--;
+			c++;
+		}
+		else
+			++c;
+		if (tabCoordsLeft == 0)
+			i += UTF8CharLength(line[i].mChar);
+	}
+	return i;
 }
 
 int TextEditor::GetCharacterIndex(const Coordinates& aCoordinates) const
@@ -2099,12 +2127,19 @@ void TextEditor::Backspace(bool aWordMode)
 
 					Selection removed;
 					removed.mStart = removed.mEnd = GetActualCursorCoordinates(c);
-					--removed.mStart.mColumn;
 
 					if (line[cindex].mChar == '\t')
-						mState.mCursors[c].mCursorPosition.mColumn -= mTabSize;
+					{
+						int tabStartColumn = GetCharacterColumn(removed.mStart.mLine, cindex);
+						int tabLength = removed.mStart.mColumn - tabStartColumn;
+						mState.mCursors[c].mCursorPosition.mColumn -= tabLength;
+						removed.mStart.mColumn -= tabLength;
+					}
 					else
+					{
 						--mState.mCursors[c].mCursorPosition.mColumn;
+						--removed.mStart.mColumn;
+					}
 
 					while (cindex < line.size() && cend-- > cindex)
 					{

@@ -415,6 +415,7 @@ public:
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
 	Coordinates FindNextWord(const Coordinates& aFrom) const;
+	int GetCharacterIndexLeftSide(const Coordinates& aCoordinates) const;
 	int GetCharacterIndex(const Coordinates& aCoordinates) const;
 	int GetCharacterColumn(int aLine, int aIndex) const;
 	int GetLineCharacterCount(int aLine) const;
