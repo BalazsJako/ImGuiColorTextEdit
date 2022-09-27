@@ -360,7 +360,7 @@ TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPositi
 				float oldX = columnX;
 				columnX = (1.0f + std::floor((1.0f + columnX) / (float(mTabSize) * spaceSize))) * (float(mTabSize) * spaceSize);
 				columnWidth = columnX - oldX;
-				delta = columnCoord - (columnCoord / mTabSize) * mTabSize + mTabSize;
+				delta = mTabSize - (columnCoord % mTabSize);
 			}
 			else
 			{
