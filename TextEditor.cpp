@@ -1980,9 +1980,10 @@ void TextEditor::Delete(bool aWordMode)
 				if (pos.mLine == (int)mLines.size() - 1)
 					return;
 
-				auto currentCoords = GetActualCursorCoordinates(c);
-				u.mRemoved.push_back({ "\n", currentCoords , currentCoords });
-				Advance(currentCoords);
+				Coordinates startCoords = GetActualCursorCoordinates(c);
+				Coordinates endCoords = startCoords;
+				Advance(endCoords);
+				u.mRemoved.push_back({ "\n", startCoords , endCoords });
 
 				auto& nextLine = mLines[pos.mLine + 1];
 				line.insert(line.end(), nextLine.begin(), nextLine.end());
@@ -2055,9 +2056,10 @@ void TextEditor::Backspace(bool aWordMode)
 				if (mState.mCursors[c].mCursorPosition.mLine == 0)
 					return;
 
-				Coordinates coords = Coordinates(pos.mLine - 1, GetLineMaxColumn(pos.mLine - 1));
-				u.mRemoved.push_back({ "\n", coords, coords });
-				Advance(coords);
+				Coordinates startCoords = Coordinates(pos.mLine - 1, GetLineMaxColumn(pos.mLine - 1));
+				Coordinates endCoords = startCoords;
+				Advance(endCoords);
+				u.mRemoved.push_back({ "\n", startCoords, endCoords });
 
 				auto& line = mLines[mState.mCursors[c].mCursorPosition.mLine];
 				auto& prevLine = mLines[mState.mCursors[c].mCursorPosition.mLine - 1];
