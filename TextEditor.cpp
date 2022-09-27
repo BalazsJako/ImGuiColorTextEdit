@@ -1707,7 +1707,7 @@ void TextEditor::MoveUp(int aAmount, bool aSelect)
 			}
 			else
 				mState.mCursors[c].mInteractiveStart = mState.mCursors[c].mInteractiveEnd = mState.mCursors[c].mCursorPosition;
-			SetSelection(mState.mCursors[c].mInteractiveStart, mState.mCursors[c].mInteractiveEnd);
+			SetSelection(mState.mCursors[c].mInteractiveStart, mState.mCursors[c].mInteractiveEnd, SelectionMode::Normal, c);
 		}
 	}
 	EnsureCursorVisible();
@@ -1737,7 +1737,7 @@ void TextEditor::MoveDown(int aAmount, bool aSelect)
 			}
 			else
 				mState.mCursors[c].mInteractiveStart = mState.mCursors[c].mInteractiveEnd = mState.mCursors[c].mCursorPosition;
-			SetSelection(mState.mCursors[c].mInteractiveStart, mState.mCursors[c].mInteractiveEnd);
+			SetSelection(mState.mCursors[c].mInteractiveStart, mState.mCursors[c].mInteractiveEnd, SelectionMode::Normal, c);
 
 		}
 	}
