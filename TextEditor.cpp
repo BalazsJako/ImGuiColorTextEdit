@@ -910,11 +910,14 @@ void TextEditor::HandleMouseInputs()
 		{
 			if (click)
 			{
-				Coordinates newSelectionEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
-				mState.mCursorPosition = newSelectionEnd;
-				SetSelectionEnd(newSelectionEnd);
-				mInteractiveEnd = mState.mSelectionEnd;
+				Coordinates newSelection = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
+				if (newSelection > mState.mCursorPosition)
+					SetSelectionEnd(newSelection);
+				else
+					SetSelectionStart(newSelection);
 				mInteractiveStart = mState.mSelectionStart;
+				mInteractiveEnd = mState.mSelectionEnd;
+				mState.mCursorPosition = newSelection;
 			}
 		}
 	}
