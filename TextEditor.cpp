@@ -1425,16 +1425,20 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 		auto& line = mLines[coord.mLine];
 		auto& newLine = mLines[coord.mLine + 1];
 
+		u.mAdded = "";
+		u.mAdded += (char)aChar;
 		if (mLanguageDefinition.mAutoIndentation)
 			for (size_t it = 0; it < line.size() && isascii(line[it].mChar) && isblank(line[it].mChar); ++it)
+			{
 				newLine.push_back(line[it]);
+				u.mAdded += line[it].mChar;
+			}
 
 		const size_t whitespaceSize = newLine.size();
 		auto cindex = GetCharacterIndex(coord);
 		newLine.insert(newLine.end(), line.begin() + cindex, line.end());
 		line.erase(line.begin() + cindex, line.begin() + line.size());
 		SetCursorPosition(Coordinates(coord.mLine + 1, GetCharacterColumn(coord.mLine + 1, (int)whitespaceSize)));
-		u.mAdded = (char)aChar;
 	}
 	else
 	{
