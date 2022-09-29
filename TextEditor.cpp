@@ -2809,8 +2809,7 @@ TextEditor::UndoRecord::UndoRecord(
 
 void TextEditor::UndoRecord::Undo(TextEditor * aEditor)
 {
-	//for (int i = mAdded.size() - 1; i > -1; i--)
-	for (int i = 0; i < mAdded.size(); i++)
+	for (int i = mAdded.size() - 1; i > -1; i--)
 	{
 		const Selection& added = mAdded[i];
 		if (!added.mText.empty())
@@ -2820,10 +2819,8 @@ void TextEditor::UndoRecord::Undo(TextEditor * aEditor)
 		}
 	}
 
-	//for (int i = 0; i < mRemoved.size(); i++)
 	for (int i = mRemoved.size() - 1; i > -1; i--)
 	{
-		//ok
 		const Selection& removed = mRemoved[i];
 		if (!removed.mText.empty())
 		{
@@ -2842,7 +2839,6 @@ void TextEditor::UndoRecord::Redo(TextEditor * aEditor)
 {
 	for (int i = 0; i < mRemoved.size(); i++)
 	{
-		//ok
 		const Selection& removed = mRemoved[i];
 		if (!removed.mText.empty())
 		{
@@ -2851,8 +2847,7 @@ void TextEditor::UndoRecord::Redo(TextEditor * aEditor)
 		}
 	}
 
-	//for (int i = 0; i < mAdded.size(); i++)
-	for (int i = mAdded.size() - 1; i > -1; i--)
+	for (int i = 0; i < mAdded.size(); i++)
 	{
 		const Selection& added = mAdded[i];
 		if (!added.mText.empty())
