@@ -681,6 +681,50 @@ void TextEditor::RemoveLine(int aIndex)
 	OnLineDeleted(aIndex);
 }
 
+void TextEditor::RemoveCurrentLines()
+{
+	UndoRecord u;
+	u.mBefore = mState;
+
+	for (int c = mState.mCurrentCursor; c > -1; c--)
+	{
+		int currentLine = mState.mCursors[c].mCursorPosition.mLine;
+		int nextLine = currentLine + 1;
+		int prevLine = currentLine - 1;
+
+		Coordinates toDeleteStart, toDeleteEnd;
+		if (mLines.size() > nextLine) // next line exists
+		{
+			toDeleteStart = Coordinates(currentLine, 0);
+			toDeleteEnd = Coordinates(nextLine, 0);
+			mState.mCursors[c].mCursorPosition.mColumn = 0;
+		}
+		else if (prevLine > -1) // previous line exists
+		{
+			toDeleteStart = Coordinates(prevLine, GetLineMaxColumn(prevLine));
+			toDeleteEnd = Coordinates(currentLine, GetLineMaxColumn(currentLine));
+			mState.mCursors[c].mCursorPosition.mLine--;
+			mState.mCursors[c].mCursorPosition.mColumn = 0;
+		}
+		else
+		{
+			toDeleteStart = Coordinates(currentLine, 0);
+			toDeleteEnd = Coordinates(currentLine, GetLineMaxColumn(currentLine));
+			mState.mCursors[c].mCursorPosition.mColumn = 0;
+		}
+
+		u.mRemoved.push_back({ GetText(toDeleteStart, toDeleteEnd), toDeleteStart, toDeleteEnd });
+
+		if (toDeleteStart.mLine != toDeleteEnd.mLine)
+			RemoveLine(currentLine);
+		else
+			DeleteRange(toDeleteStart, toDeleteEnd);
+	}
+
+	u.mAfter = mState;
+	AddUndo(u);
+}
+
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
 {
 	assert(!mReadOnly);
@@ -803,7 +847,7 @@ void TextEditor::HandleKeyboardInputs()
 		else if (!IsReadOnly() && !alt && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Backspace)))
 			Backspace(ctrl);
 		else if (!IsReadOnly() && !alt && ctrl && shift && !super && ImGui::IsKeyPressed('K'))
-			DeleteCurrentLine();
+			RemoveCurrentLines();
 		else if (!alt && !ctrl && !shift && !super && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Insert)))
 			mOverwrite ^= true;
 		else if (isCtrlOnly && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Insert)))
@@ -1645,44 +1689,6 @@ void TextEditor::DeleteSelection(int aCursor)
 	mState.mCursors[aCursor].mInteractiveStart = mState.mCursors[aCursor].mSelectionStart;
 	mState.mCursors[aCursor].mInteractiveEnd = mState.mCursors[aCursor].mSelectionEnd;
 	Colorize(mState.mCursors[aCursor].mSelectionStart.mLine, 1);
-}
-
-void TextEditor::DeleteCurrentLine()
-{
-	UndoRecord u;
-	u.mBefore = mState;
-
-	int currentLine = mState.mCursors[mState.mCurrentCursor].mCursorPosition.mLine;
-	int nextLine = currentLine + 1;
-	int prevLine = currentLine - 1;
-
-	Coordinates toDeleteStart, toDeleteEnd;
-	if (mLines.size() > nextLine) // next line exists
-	{
-		toDeleteStart = Coordinates(currentLine, 0);
-		toDeleteEnd = Coordinates(nextLine, 0);
-		mState.mCursors[mState.mCurrentCursor].mCursorPosition.mColumn = 0;
-	}
-	else if (prevLine > -1) // previous line exists
-	{
-		toDeleteStart = Coordinates(prevLine, GetLineMaxColumn(prevLine));
-		toDeleteEnd = Coordinates(currentLine, GetLineMaxColumn(currentLine));
-		mState.mCursors[mState.mCurrentCursor].mCursorPosition.mLine--;
-		mState.mCursors[mState.mCurrentCursor].mCursorPosition.mColumn = 0;
-	}
-	else
-	{
-		toDeleteStart = Coordinates(currentLine, 0);
-		toDeleteEnd = Coordinates(currentLine, GetLineMaxColumn(currentLine));
-		mState.mCursors[mState.mCurrentCursor].mCursorPosition.mColumn = 0;
-	}
-
-	u.mRemoved.push_back({ GetText(toDeleteStart, toDeleteEnd), toDeleteStart, toDeleteEnd });
-
-	DeleteRange(toDeleteStart, toDeleteEnd);
-
-	u.mAfter = mState;
-	AddUndo(u);
 }
 
 void TextEditor::MoveUp(int aAmount, bool aSelect)

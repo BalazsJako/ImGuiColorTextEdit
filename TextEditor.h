@@ -423,11 +423,11 @@ public:
 	bool IsOnWordBoundary(const Coordinates& aAt) const;
 	void RemoveLines(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
+	void RemoveCurrentLines();
 	Line& InsertLine(int aIndex);
 	void EnterCharacter(ImWchar aChar, bool aShift);
 	void Backspace(bool aWordMode = false);
 	void DeleteSelection(int aCursor = -1);
-	void DeleteCurrentLine();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
 	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
