@@ -236,23 +236,21 @@ void TextEditor::DeleteRange(const Coordinates & aStart, const Coordinates & aEn
 
 	if (aStart.mLine == aEnd.mLine)
 	{
-		auto& line = mLines[aStart.mLine];
 		auto n = GetLineMaxColumn(aStart.mLine);
 		if (aEnd.mColumn >= n)
-			line.erase(line.begin() + start, line.end());
+			RemoveGlyphsFromLine(aStart.mLine, start); // from start to end of line
 		else
-			line.erase(line.begin() + start, line.begin() + end);
+			RemoveGlyphsFromLine(aStart.mLine, start, end);
 	}
 	else
 	{
+		RemoveGlyphsFromLine(aStart.mLine, start); // from start to end of line
+		RemoveGlyphsFromLine(aEnd.mLine, 0, end);
 		auto& firstLine = mLines[aStart.mLine];
 		auto& lastLine = mLines[aEnd.mLine];
 
-		firstLine.erase(firstLine.begin() + start, firstLine.end());
-		lastLine.erase(lastLine.begin(), lastLine.begin() + end);
-
 		if (aStart.mLine < aEnd.mLine)
-			firstLine.insert(firstLine.end(), lastLine.begin(), lastLine.end());
+			AddGlyphsToLine(aStart.mLine, firstLine.size(), lastLine.begin(), lastLine.end());
 
 		if (aStart.mLine < aEnd.mLine)
 			RemoveLines(aStart.mLine + 1, aEnd.mLine + 1);
@@ -282,8 +280,8 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			{
 				auto& newLine = InsertLine(aWhere.mLine + 1);
 				auto& line = mLines[aWhere.mLine];
-				newLine.insert(newLine.begin(), line.begin() + cindex, line.end());
-				line.erase(line.begin() + cindex, line.end());
+				AddGlyphsToLine(aWhere.mLine + 1, 0, line.begin() + cindex, line.end());
+				RemoveGlyphsFromLine(aWhere.mLine, cindex);
 			}
 			else
 			{
@@ -300,7 +298,7 @@ int TextEditor::InsertTextAt(Coordinates& /* inout */ aWhere, const char * aValu
 			auto& line = mLines[aWhere.mLine];
 			auto d = UTF8CharLength(*aValue);
 			while (d-- > 0 && *aValue != '\0')
-				line.insert(line.begin() + cindex++, Glyph(*aValue++, PaletteIndex::Default));
+				AddGlyphToLine(aWhere.mLine, cindex++, Glyph(*aValue++, PaletteIndex::Default));
 			aWhere.mColumn = GetCharacterColumn(aWhere.mLine, cindex);
 		}
 
@@ -723,6 +721,34 @@ void TextEditor::RemoveCurrentLines()
 
 	u.mAfter = mState;
 	AddUndo(u);
+}
+
+void TextEditor::RemoveGlyphsFromLine(int aLine, int aStartChar, int aEndChar)
+{
+	int column = GetCharacterColumn(aLine, aStartChar);
+	int deltaX = GetCharacterColumn(aLine, aEndChar) - column;
+	auto& line = mLines[aLine];
+	line.erase(line.begin() + aStartChar, aEndChar == -1 ? line.end() : line.begin() + aEndChar);
+	OnCharactersDeletedFromLine(aLine, column, deltaX);
+}
+
+void TextEditor::AddGlyphsToLine(int aLine, int aTargetIndex, Line::iterator aSourceStart, Line::iterator aSourceEnd)
+{
+	int targetColumn = GetCharacterColumn(aLine, aTargetIndex);
+	int charsInserted = std::distance(aSourceStart, aSourceEnd);
+	auto& line = mLines[aLine];
+	line.insert(line.begin() + aTargetIndex, aSourceStart, aSourceEnd);
+	int deltaX = GetCharacterColumn(aLine, aTargetIndex + charsInserted) - targetColumn;
+	OnCharactersInsertedToLine(aLine, targetColumn, deltaX);
+}
+
+void TextEditor::AddGlyphToLine(int aLine, int aTargetIndex, Glyph aGlyph)
+{
+	int targetColumn = GetCharacterColumn(aLine, aTargetIndex);
+	auto& line = mLines[aLine];
+	line.insert(line.begin() + aTargetIndex, aGlyph);
+	int deltaX = GetCharacterColumn(aLine, aTargetIndex + 1) - targetColumn;
+	OnCharactersInsertedToLine(aLine, targetColumn, deltaX);
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
@@ -1431,14 +1457,14 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 						{
 							if (line.front().mChar == '\t')
 							{
-								line.erase(line.begin());
+								RemoveGlyphsFromLine(i, 0, 1);
 								modified = true;
 							}
 							else
 							{
 								for (int j = 0; j < mTabSize && !line.empty() && line.front().mChar == ' '; j++)
 								{
-									line.erase(line.begin());
+									RemoveGlyphsFromLine(i, 0, 1);
 									modified = true;
 								}
 							}
@@ -1446,7 +1472,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 					}
 					else
 					{
-						line.insert(line.begin(), Glyph('\t', TextEditor::PaletteIndex::Background));
+						AddGlyphToLine(i, 0, Glyph('\t', TextEditor::PaletteIndex::Background));
 						modified = true;
 					}
 				}
@@ -1492,7 +1518,7 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 	} // HasSelection
 
 	std::vector<Coordinates> coords;
-	for (int c = mState.mCurrentCursor; c > -1; c--)
+	for (int c = 0; c <= mState.mCurrentCursor; c++) // order important here for typing tabs in the same line at the same time
 	{
 		auto coord = GetActualCursorCoordinates(c);
 		coords.push_back(coord);
@@ -1513,8 +1539,8 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 
 			const size_t whitespaceSize = newLine.size();
 			auto cindex = GetCharacterIndex(coord);
-			newLine.insert(newLine.end(), line.begin() + cindex, line.end());
-			line.erase(line.begin() + cindex, line.begin() + line.size());
+			AddGlyphsToLine(coord.mLine + 1, newLine.size(), line.begin() + cindex, line.end());
+			RemoveGlyphsFromLine(coord.mLine, cindex);
 			SetCursorPosition(Coordinates(coord.mLine + 1, GetCharacterColumn(coord.mLine + 1, (int)whitespaceSize)), c);
 			added.mText = (char)aChar;
 		}
@@ -1538,12 +1564,12 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 					while (d-- > 0 && cindex < (int)line.size())
 					{
 						removed.mText += line[cindex].mChar;
-						line.erase(line.begin() + cindex);
+						RemoveGlyphsFromLine(coord.mLine, cindex, cindex + 1);
 					}
 				}
 
 				for (auto p = buf; *p != '\0'; p++, ++cindex)
-					line.insert(line.begin() + cindex, Glyph(*p, PaletteIndex::Default));
+					AddGlyphToLine(coord.mLine, cindex, Glyph(*p, PaletteIndex::Default));
 				added.mText = buf;
 
 				SetCursorPosition(Coordinates(coord.mLine, GetCharacterColumn(coord.mLine, cindex)), c);
@@ -2020,7 +2046,7 @@ void TextEditor::Delete(bool aWordMode)
 				u.mRemoved.push_back({ "\n", startCoords , endCoords });
 
 				auto& nextLine = mLines[pos.mLine + 1];
-				line.insert(line.end(), nextLine.begin(), nextLine.end());
+				AddGlyphsToLine(pos.mLine, line.size(), nextLine.begin(), nextLine.end());
 				RemoveLine(pos.mLine + 1);
 			}
 			else
@@ -2045,7 +2071,7 @@ void TextEditor::Delete(bool aWordMode)
 
 					auto d = UTF8CharLength(line[cindex].mChar);
 					while (d-- > 0 && cindex < (int)line.size())
-						line.erase(line.begin() + cindex);
+						RemoveGlyphsFromLine(pos.mLine, cindex, cindex + 1);
 				}
 			}
 		}
@@ -2098,7 +2124,7 @@ void TextEditor::Backspace(bool aWordMode)
 				auto& line = mLines[mState.mCursors[c].mCursorPosition.mLine];
 				auto& prevLine = mLines[mState.mCursors[c].mCursorPosition.mLine - 1];
 				auto prevSize = GetLineMaxColumn(mState.mCursors[c].mCursorPosition.mLine - 1);
-				prevLine.insert(prevLine.end(), line.begin(), line.end());
+				AddGlyphsToLine(mState.mCursors[c].mCursorPosition.mLine - 1, prevLine.size(), line.begin(), line.end());
 
 				ErrorMarkers etmp;
 				for (auto& i : mErrorMarkers)
@@ -2150,7 +2176,7 @@ void TextEditor::Backspace(bool aWordMode)
 					while (cindex < line.size() && cend-- > cindex)
 					{
 						removed.mText += line[cindex].mChar;
-						line.erase(line.begin() + cindex);
+						RemoveGlyphsFromLine(mState.mCursors[c].mCursorPosition.mLine, cindex, cindex + 1);
 					}
 					u.mRemoved.push_back(removed);
 				}
