@@ -2138,6 +2138,13 @@ void TextEditor::Backspace(bool aWordMode)
 				auto& prevLine = mLines[mState.mCursors[c].mCursorPosition.mLine - 1];
 				auto prevSize = GetLineMaxColumn(mState.mCursors[c].mCursorPosition.mLine - 1);
 				AddGlyphsToLine(mState.mCursors[c].mCursorPosition.mLine - 1, prevLine.size(), line.begin(), line.end());
+				for (int otherCursor = c + 1;
+					otherCursor <= mState.mCurrentCursor && mState.mCursors[otherCursor].mCursorPosition.mLine == mState.mCursors[c].mCursorPosition.mLine;
+					otherCursor++) // move up cursors in same line
+				{
+					auto targetCoords = Coordinates(mState.mCursors[c].mCursorPosition.mLine - 1, prevSize + mState.mCursors[otherCursor].mCursorPosition.mColumn);
+					SetCursorPosition(targetCoords, otherCursor);
+				}
 
 				ErrorMarkers etmp;
 				for (auto& i : mErrorMarkers)
