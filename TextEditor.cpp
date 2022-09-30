@@ -1533,16 +1533,20 @@ void TextEditor::EnterCharacter(ImWchar aChar, bool aShift)
 			auto& line = mLines[coord.mLine];
 			auto& newLine = mLines[coord.mLine + 1];
 
+			added.mText = "";
+			added.mText += (char)aChar;
 			if (mLanguageDefinition.mAutoIndentation)
 				for (size_t it = 0; it < line.size() && isascii(line[it].mChar) && isblank(line[it].mChar); ++it)
+				{
 					newLine.push_back(line[it]);
+					added.mText += line[it].mChar;
+				}
 
 			const size_t whitespaceSize = newLine.size();
 			auto cindex = GetCharacterIndex(coord);
 			AddGlyphsToLine(coord.mLine + 1, newLine.size(), line.begin() + cindex, line.end());
 			RemoveGlyphsFromLine(coord.mLine, cindex);
 			SetCursorPosition(Coordinates(coord.mLine + 1, GetCharacterColumn(coord.mLine + 1, (int)whitespaceSize)), c);
-			added.mText = (char)aChar;
 		}
 		else
 		{
