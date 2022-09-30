@@ -929,12 +929,14 @@ void TextEditor::HandleMouseInputs()
 
 			if (tripleClick)
 			{
-				if (!ctrl)
-				{
-					mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
-					mSelectionMode = SelectionMode::Line;
-					SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
-				}
+				if (ctrl)
+					mState.AddCursor();
+				else
+					mState.mCurrentCursor = 0;
+
+				mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
+				mSelectionMode = SelectionMode::Line;
+				SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
 
 				mLastClick = -1.0f;
 			}
@@ -945,17 +947,19 @@ void TextEditor::HandleMouseInputs()
 
 			else if (doubleClick)
 			{
-				if (!ctrl)
-				{
-					mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
-					mState.mCursors[mState.mCurrentCursor].mInteractiveStart = FindWordStart(mState.mCursors[mState.mCurrentCursor].mCursorPosition);
-					mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = FindWordEnd(mState.mCursors[mState.mCurrentCursor].mCursorPosition);
-					if (mSelectionMode == SelectionMode::Line)
-						mSelectionMode = SelectionMode::Normal;
-					else
-						mSelectionMode = SelectionMode::Word;
-					SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
-				}
+				if (ctrl)
+					mState.AddCursor();
+				else
+					mState.mCurrentCursor = 0;
+
+				mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos());
+				mState.mCursors[mState.mCurrentCursor].mInteractiveStart = FindWordStart(mState.mCursors[mState.mCurrentCursor].mCursorPosition);
+				mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = FindWordEnd(mState.mCursors[mState.mCurrentCursor].mCursorPosition);
+				if (mSelectionMode == SelectionMode::Line)
+					mSelectionMode = SelectionMode::Normal;
+				else
+					mSelectionMode = SelectionMode::Word;
+				SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
 
 				mLastClick = (float)ImGui::GetTime();
 			}
