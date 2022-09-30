@@ -1005,11 +1005,16 @@ void TextEditor::HandleMouseInputs()
 		{
 			if (click)
 			{
-				Coordinates newSelectionEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
-				mState.mCursors[mState.mCurrentCursor].mCursorPosition = newSelectionEnd;
-				SetSelectionEnd(newSelectionEnd);
+				Coordinates oldCursorPosition = mState.mCursors[mState.mCurrentCursor].mCursorPosition;
+				Coordinates newSelection = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
+				if (newSelection > mState.mCursors[mState.mCurrentCursor].mCursorPosition)
+					SetSelectionEnd(newSelection);
+				else
+					SetSelectionStart(newSelection);
 				mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = mState.mCursors[mState.mCurrentCursor].mSelectionEnd;
 				mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mSelectionStart;
+				mState.mCursors[mState.mCurrentCursor].mCursorPosition = newSelection;
+				mState.mCursors[mState.mCurrentCursor].mCursorPositionChanged = oldCursorPosition != newSelection;
 			}
 		}
 	}
