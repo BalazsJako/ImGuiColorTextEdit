@@ -684,6 +684,15 @@ void TextEditor::RemoveCurrentLines()
 	UndoRecord u;
 	u.mBefore = mState;
 
+	if (HasSelection())
+	{
+		for (int c = mState.mCurrentCursor; c > -1; c--)
+		{
+			u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
+			DeleteSelection(c);
+		}
+	}
+
 	for (int c = mState.mCurrentCursor; c > -1; c--)
 	{
 		int currentLine = mState.mCursors[c].mCursorPosition.mLine;
