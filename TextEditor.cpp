@@ -1745,24 +1745,26 @@ void TextEditor::SetTabSize(int aValue)
 	mTabSize = std::max(0, std::min(32, aValue));
 }
 
-void TextEditor::InsertText(const std::string& aValue)
+void TextEditor::InsertText(const std::string& aValue, int aCursor)
 {
-	InsertText(aValue.c_str());
+	InsertText(aValue.c_str(), aCursor);
 }
 
-void TextEditor::InsertText(const char* aValue)
+void TextEditor::InsertText(const char* aValue, int aCursor)
 {
 	if (aValue == nullptr)
 		return;
+	if (aCursor == -1)
+		aCursor = mState.mCurrentCursor;
 
-	auto pos = GetActualCursorCoordinates();
-	auto start = std::min(pos, mState.mCursors[mState.mCurrentCursor].mSelectionStart);
+	auto pos = GetActualCursorCoordinates(aCursor);
+	auto start = std::min(pos, mState.mCursors[aCursor].mSelectionStart);
 	int totalLines = pos.mLine - start.mLine;
 
 	totalLines += InsertTextAt(pos, aValue);
 
-	SetSelection(pos, pos);
-	SetCursorPosition(pos);
+	SetSelection(pos, pos, SelectionMode::Normal, aCursor);
+	SetCursorPosition(pos, aCursor);
 	Colorize(start.mLine - 1, totalLines + 2);
 }
 
@@ -2306,8 +2308,8 @@ void TextEditor::Copy()
 {
 	if (HasSelection())
 	{
-		mClipboardInfo = GetClipboardInfo();
-		ImGui::SetClipboardText(mClipboardInfo.text.c_str());
+		std::string clipboardText = GetClipboardText();
+		ImGui::SetClipboardText(clipboardText.c_str());
 	}
 	else
 	{
@@ -2353,27 +2355,55 @@ void TextEditor::Paste()
 	if (IsReadOnly())
 		return;
 
-	// should do multicursor paste if possible
-	auto clipText = ImGui::GetClipboardText();
-	if (clipText != nullptr && strlen(clipText) > 0)
+	// check if we should do multicursor paste
+	std::string clipText = ImGui::GetClipboardText();
+	bool canPasteToMultipleCursors = false;
+	std::vector<std::pair<int, int>> clipTextLines;
+	if (mState.mCurrentCursor > 0)
+	{
+		clipTextLines.push_back({ 0,0 });
+		for (int i = 0; i < clipText.length(); i++)
+		{
+			if (clipText[i] == '\n')
+			{
+				clipTextLines.back().second = i;
+				clipTextLines.push_back({ i + 1, 0 });
+			}
+		}
+		clipTextLines.back().second = clipText.length();
+		canPasteToMultipleCursors = clipTextLines.size() == mState.mCurrentCursor + 1;
+	}
+
+	if (clipText.length() > 0)
 	{
 		UndoRecord u;
 		u.mBefore = mState;
 
 		if (HasSelection())
 		{
-			for (int c = 0; c <= mState.mCurrentCursor; c++)
+			for (int c = mState.mCurrentCursor; c > -1; c--)
 			{
 				u.mRemoved.push_back({ GetSelectedText(c), mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd });
 				DeleteSelection(c);
 			}
 		}
 
-		Coordinates start = GetActualCursorCoordinates();
+		for (int c = mState.mCurrentCursor; c > -1; c--)
+		{
+			Coordinates start = GetActualCursorCoordinates(c);
+			if (canPasteToMultipleCursors)
+			{
+				std::string clipSubText = clipText.substr(clipTextLines[c].first, clipTextLines[c].second - clipTextLines[c].first);
+				InsertText(clipSubText, c);
+				u.mAdded.push_back({ clipSubText, start, GetActualCursorCoordinates(c) });
+			}
+			else
+			{
+				InsertText(clipText, c);
+				u.mAdded.push_back({ clipText, start, GetActualCursorCoordinates(c) });
+			}
+		}
 
-		InsertText(clipText);
-
-		u.mAdded.push_back({ clipText, start, GetActualCursorCoordinates() });
 		u.mAfter = mState;
 		AddUndo(u);
 	}
@@ -2591,19 +2621,16 @@ std::vector<std::string> TextEditor::GetTextLines() const
 	return result;
 }
 
-TextEditor::ClipboardInfo TextEditor::GetClipboardInfo() const
+std::string TextEditor::GetClipboardText() const
 {
-	ClipboardInfo result;
+	std::string result;
 	for (int c = 0; c <= mState.mCurrentCursor; c++)
 	{
 		if (mState.mCursors[c].mSelectionStart < mState.mCursors[c].mSelectionEnd)
 		{
-			if (result.text.length() != 0)
-			{
-				result.text += '\n';
-				result.dividers.push_back(result.text.length() - 1);
-			}
-			result.text += GetText(mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd);
+			if (result.length() != 0)
+				result += '\n';
+			result += GetText(mState.mCursors[c].mSelectionStart, mState.mCursors[c].mSelectionEnd);
 		}
 	}
 	return result;

@@ -189,28 +189,6 @@ public:
 		static const LanguageDefinition& Lua();
 	};
 
-	struct ClipboardInfo
-	{
-		std::string text = "";
-		std::vector<int> dividers;
-		std::string GetText(int index = 0)
-		{
-			if (dividers.size() == 0)
-				return text;
-
-			if (index == 0)
-				return text.substr(0, dividers[0]);
-			if (index >= dividers.size())
-				return text.substr(dividers[dividers.size() - 1] + 1);
-			else
-			{
-				int q = dividers[index - 1] + 1;
-				int p = dividers[index];
-				return text.substr(q, p - q);
-			}
-		}
-	};
-
 	struct Selection
 	{
 		std::string mText;
@@ -237,8 +215,7 @@ public:
 	void SetTextLines(const std::vector<std::string>& aLines);
 	std::vector<std::string> GetTextLines() const;
 
-	ClipboardInfo GetClipboardInfo() const;
-	//std::vector<Selection> GetSelectedText() const;
+	std::string GetClipboardText() const;
 	std::string GetSelectedText(int aCursor = -1) const;
 	std::string GetCurrentLineText()const;
 
@@ -309,8 +286,8 @@ public:
 	void SetTabSize(int aValue);
 	inline int GetTabSize() const { return mTabSize; }
 
-	void InsertText(const std::string& aValue);
-	void InsertText(const char* aValue);
+	void InsertText(const std::string& aValue, int aCursor = -1);
+	void InsertText(const char* aValue, int aCursor = -1);
 
 	void MoveUp(int aAmount = 1, bool aSelect = false);
 	void MoveDown(int aAmount = 1, bool aSelect = false);
@@ -476,6 +453,4 @@ public:
 	uint64_t mStartTime;
 
 	float mLastClick;
-
-	ClipboardInfo mClipboardInfo;
 };
