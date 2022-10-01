@@ -281,33 +281,6 @@ public:
 		}
 	}
 
-	inline void OnCharactersDeletedFromLine(int aLine, int aColumn, int aDeltaX)
-	{
-		//std::cout << "CHARACTERS DELETED: " << aLine << ", " << aColumn << ", " << aDeltaX << std::endl;
-
-		for (int c = 0; c <= mState.mCurrentCursor; c++)
-		{
-			if (mState.mCursors[c].mCursorPosition.mLine == aLine)
-			{
-				if (mState.mCursors[c].mCursorPosition.mColumn > aColumn)
-					mState.mCursors[c].mCursorPosition.mColumn -= aDeltaX;
-			}
-		}
-	}
-	inline void OnCharactersInsertedToLine(int aLine, int aColumn, int aDeltaX)
-	{
-		//std::cout << "CHARACTERS INSERTED: " << aLine << ", " << aColumn << ", " << aDeltaX << std::endl;
-
-		for (int c = 0; c <= mState.mCurrentCursor; c++)
-		{
-			if (mState.mCursors[c].mCursorPosition.mLine == aLine)
-			{
-				if (mState.mCursors[c].mCursorPosition.mColumn > aColumn)
-					mState.mCursors[c].mCursorPosition.mColumn += aDeltaX;
-			}
-		}
-	}
-
 	inline void SetHandleMouseInputs    (bool aValue){ mHandleMouseInputs    = aValue;}
 	inline bool IsHandleMouseInputsEnabled() const { return mHandleMouseInputs; }
 
@@ -451,6 +424,7 @@ public:
 	void RemoveLines(int aStart, int aEnd);
 	void RemoveLine(int aIndex);
 	void RemoveCurrentLines();
+	void OnLineChanged(bool aBeforeChange, int aLine, int aColumn, int aCharCount, bool aDeleted);
 	void RemoveGlyphsFromLine(int aLine, int aStartChar, int aEndChar = -1);
 	void AddGlyphsToLine(int aLine, int aTargetIndex, Line::iterator aSourceStart, Line::iterator aSourceEnd);
 	void AddGlyphToLine(int aLine, int aTargetIndex, Glyph aGlyph);

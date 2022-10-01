@@ -723,13 +723,39 @@ void TextEditor::RemoveCurrentLines()
 	AddUndo(u);
 }
 
+void TextEditor::OnLineChanged(bool aBeforeChange, int aLine, int aColumn, int aCharCount, bool aDeleted)
+{
+	static std::unordered_map<int, int> cursorCharIndices;
+	if (aBeforeChange)
+	{
+		cursorCharIndices.clear();
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
+		{
+			if (mState.mCursors[c].mCursorPosition.mLine == aLine)
+			{
+				if (mState.mCursors[c].mCursorPosition.mColumn > aColumn)
+				{
+					cursorCharIndices[c] = GetCharacterIndex({ aLine, mState.mCursors[c].mCursorPosition.mColumn });
+					cursorCharIndices[c] += aDeleted ? -aCharCount : aCharCount;
+				}
+			}
+		}
+	}
+	else
+	{
+		for (auto& item : cursorCharIndices)
+			SetCursorPosition({ aLine, GetCharacterColumn(aLine, item.second) }, item.first);
+	}
+}
+
 void TextEditor::RemoveGlyphsFromLine(int aLine, int aStartChar, int aEndChar)
 {
 	int column = GetCharacterColumn(aLine, aStartChar);
 	int deltaX = GetCharacterColumn(aLine, aEndChar) - column;
 	auto& line = mLines[aLine];
+	OnLineChanged(true, aLine, column, aEndChar - aStartChar, true);
 	line.erase(line.begin() + aStartChar, aEndChar == -1 ? line.end() : line.begin() + aEndChar);
-	OnCharactersDeletedFromLine(aLine, column, deltaX);
+	OnLineChanged(false, aLine, column, aEndChar - aStartChar, true);
 }
 
 void TextEditor::AddGlyphsToLine(int aLine, int aTargetIndex, Line::iterator aSourceStart, Line::iterator aSourceEnd)
@@ -737,18 +763,18 @@ void TextEditor::AddGlyphsToLine(int aLine, int aTargetIndex, Line::iterator aSo
 	int targetColumn = GetCharacterColumn(aLine, aTargetIndex);
 	int charsInserted = std::distance(aSourceStart, aSourceEnd);
 	auto& line = mLines[aLine];
+	OnLineChanged(true, aLine, targetColumn, charsInserted, false);
 	line.insert(line.begin() + aTargetIndex, aSourceStart, aSourceEnd);
-	int deltaX = GetCharacterColumn(aLine, aTargetIndex + charsInserted) - targetColumn;
-	OnCharactersInsertedToLine(aLine, targetColumn, deltaX);
+	OnLineChanged(false, aLine, targetColumn, charsInserted, false);
 }
 
 void TextEditor::AddGlyphToLine(int aLine, int aTargetIndex, Glyph aGlyph)
 {
 	int targetColumn = GetCharacterColumn(aLine, aTargetIndex);
 	auto& line = mLines[aLine];
+	OnLineChanged(true, aLine, targetColumn, 1, false);
 	line.insert(line.begin() + aTargetIndex, aGlyph);
-	int deltaX = GetCharacterColumn(aLine, aTargetIndex + 1) - targetColumn;
-	OnCharactersInsertedToLine(aLine, targetColumn, deltaX);
+	OnLineChanged(false, aLine, targetColumn, 1, false);
 }
 
 TextEditor::Line& TextEditor::InsertLine(int aIndex)
