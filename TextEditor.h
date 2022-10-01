@@ -248,7 +248,8 @@ public:
 	void SetReadOnly(bool aValue);
 	bool IsReadOnly() const { return mReadOnly; }
 	bool IsTextChanged() const { return mTextChanged; }
-	bool IsCursorPositionChanged() const { return mCursorPositionChanged; }
+
+	void OnCursorPositionChanged(int aCursor);
 
 	bool IsColorizerEnabled() const { return mColorizerEnabled; }
 	void SetColorizerEnable(bool aValue);
@@ -322,7 +323,7 @@ public:
 
 	void SetSelectionStart(const Coordinates& aPosition, int aCursor = -1);
 	void SetSelectionEnd(const Coordinates& aPosition, int aCursor = -1);
-	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal, int aCursor = -1);
+	void SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode = SelectionMode::Normal, int aCursor = -1, bool isSpawningNewCursor = false);
 	void SelectWordUnderCursor();
 	void SelectAll();
 	bool HasSelection() const;
@@ -352,6 +353,7 @@ public:
 		Coordinates mSelectionEnd = { 0,0 };
 		Coordinates mInteractiveStart = { 0,0 };
 		Coordinates mInteractiveEnd = { 0,0 };
+		bool mCursorPositionChanged = false;
 	};
 
 	//typedef std::vector<Cursor> EditorState;
@@ -365,6 +367,8 @@ public:
 			mCursors.resize(mCurrentCursor + 1);
 		}
 	};
+
+	void MergeCursorsIfPossible();
 
 	class UndoRecord
 	{
@@ -450,7 +454,6 @@ public:
 	bool mColorizerEnabled;
 	float mTextStart;                   // position (in pixels) where a code line starts relative to the left of the TextEditor.
 	int  mLeftMargin;
-	bool mCursorPositionChanged;
 	int mColorRangeMin, mColorRangeMax;
 	SelectionMode mSelectionMode;
 	bool mHandleKeyboardInputs;
@@ -458,6 +461,7 @@ public:
 	bool mIgnoreImGuiChild;
 	bool mShowWhitespaces;
 	bool mShowShortTabGlyphs;
+	bool mDraggingSelection = false;
 
 	Palette mPaletteBase;
 	Palette mPalette;

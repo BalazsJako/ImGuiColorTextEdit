@@ -37,7 +37,6 @@ TextEditor::TextEditor()
 	, mColorizerEnabled(true)
 	, mTextStart(20.0f)
 	, mLeftMargin(10)
-	, mCursorPositionChanged(false)
 	, mColorRangeMin(0)
 	, mColorRangeMax(0)
 	, mSelectionMode(SelectionMode::Normal)
@@ -1017,27 +1016,28 @@ void TextEditor::HandleMouseInputs()
 					mSelectionMode = SelectionMode::Word;
 				else
 					mSelectionMode = SelectionMode::Normal;
-				SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
+				SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode, -1, ctrl);
 
 				mLastClick = (float)ImGui::GetTime();
 			}
 			// Mouse left button dragging (=> update selection)
 			else if (ImGui::IsMouseDragging(0) && ImGui::IsMouseDown(0))
 			{
+				mDraggingSelection = true;
 				io.WantCaptureMouse = true;
 				mState.mCursors[mState.mCurrentCursor].mCursorPosition = mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = ScreenPosToCoordinates(ImGui::GetMousePos(), !mOverwrite);
 				SetSelection(mState.mCursors[mState.mCurrentCursor].mInteractiveStart, mState.mCursors[mState.mCurrentCursor].mInteractiveEnd, mSelectionMode);
 			}
 			else if (ImGui::IsMouseReleased(0))
 			{
-				std::cout << "RELEASEINGN\n";
+				mDraggingSelection = false;
 
 				// sort from cursors from top to bottom
 				std::sort(mState.mCursors.begin(), mState.mCursors.begin() + (mState.mCurrentCursor + 1), [](const Cursor& a, const Cursor& b) -> bool
 					{
 						return a.mSelectionStart < b.mSelectionStart;
 					});
-				// merge cursors if they overlap
+				MergeCursorsIfPossible();
 			}
 		}
 		else if (shift)
@@ -1053,6 +1053,7 @@ void TextEditor::HandleMouseInputs()
 				mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = mState.mCursors[mState.mCurrentCursor].mSelectionEnd;
 				mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mSelectionStart;
 				mState.mCursors[mState.mCurrentCursor].mCursorPosition = newSelection;
+				mState.mCursors[mState.mCurrentCursor].mCursorPositionChanged = oldCursorPosition != newSelection;
 			}
 		}
 	}
@@ -1362,9 +1363,15 @@ void TextEditor::Render()
 
 void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 {
+	for (int c = 0; c <= mState.mCurrentCursor; c++)
+	{
+		if (mState.mCursors[c].mCursorPositionChanged)
+			OnCursorPositionChanged(c);
+		mState.mCursors[c].mCursorPositionChanged = false;
+	}
+
 	mWithinRender = true;
 	mTextChanged = false;
-	mCursorPositionChanged = false;
 
 	UpdatePalette();
 
@@ -1645,6 +1652,19 @@ void TextEditor::SetReadOnly(bool aValue)
 	mReadOnly = aValue;
 }
 
+void TextEditor::OnCursorPositionChanged(int aCursor)
+{
+	if (mDraggingSelection)
+		return;
+
+	// sort from cursors from top to bottom
+	std::sort(mState.mCursors.begin(), mState.mCursors.begin() + (mState.mCurrentCursor + 1), [](const Cursor& a, const Cursor& b) -> bool
+		{
+			return a.mSelectionStart < b.mSelectionStart;
+		});
+	MergeCursorsIfPossible();
+}
+
 void TextEditor::SetColorizerEnable(bool aValue)
 {
 	mColorizerEnabled = aValue;
@@ -1658,7 +1678,7 @@ void TextEditor::SetCursorPosition(const Coordinates& aPosition, int aCursor)
 	if (mState.mCursors[aCursor].mCursorPosition != aPosition)
 	{
 		mState.mCursors[aCursor].mCursorPosition = aPosition;
-		mCursorPositionChanged = true;
+		mState.mCursors[aCursor].mCursorPositionChanged = true;
 		EnsureCursorVisible();
 	}
 }
@@ -1683,7 +1703,7 @@ void TextEditor::SetSelectionEnd(const Coordinates& aPosition, int aCursor)
 		std::swap(mState.mCursors[aCursor].mSelectionStart, mState.mCursors[aCursor].mSelectionEnd);
 }
 
-void TextEditor::SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode, int aCursor)
+void TextEditor::SetSelection(const Coordinates& aStart, const Coordinates& aEnd, SelectionMode aMode, int aCursor, bool isSpawningNewCursor)
 {
 	if (aCursor == -1)
 		aCursor = mState.mCurrentCursor;
@@ -1716,7 +1736,8 @@ void TextEditor::SetSelection(const Coordinates& aStart, const Coordinates& aEnd
 
 	if (mState.mCursors[aCursor].mSelectionStart != oldSelStart ||
 		mState.mCursors[aCursor].mSelectionEnd != oldSelEnd)
-		mCursorPositionChanged = true;
+		if (!isSpawningNewCursor)
+			mState.mCursors[aCursor].mCursorPositionChanged = true;
 }
 
 void TextEditor::SetTabSize(int aValue)
@@ -2200,6 +2221,7 @@ void TextEditor::Backspace(bool aWordMode)
 				RemoveLine(mState.mCursors[c].mCursorPosition.mLine);
 				--mState.mCursors[c].mCursorPosition.mLine;
 				mState.mCursors[c].mCursorPosition.mColumn = prevSize;
+				mState.mCursors[c].mCursorPositionChanged = true;
 			}
 			else
 			{
@@ -2246,6 +2268,7 @@ void TextEditor::Backspace(bool aWordMode)
 					}
 					u.mRemoved.push_back(removed);
 				}
+				mState.mCursors[c].mCursorPositionChanged = true;
 			}
 		}
 
@@ -2491,6 +2514,52 @@ const TextEditor::Palette & TextEditor::GetRetroBluePalette()
 			0x00000040, // Current line edge
 		} };
 	return p;
+}
+
+void TextEditor::MergeCursorsIfPossible()
+{
+	// requires the cursors to be sorted from top to bottom
+	std::unordered_set<int> cursorsToDelete;
+	if (HasSelection())
+	{
+		// merge cursors if they overlap
+		for (int c = mState.mCurrentCursor; c > 0; c--)// iterate backwards through pairs
+		{
+			int pc = c - 1;
+
+			bool pcContainsC = mState.mCursors[pc].mSelectionEnd >= mState.mCursors[c].mSelectionEnd;
+			bool pcContainsStartOfC = mState.mCursors[pc].mSelectionEnd >= mState.mCursors[c].mSelectionStart;
+
+			if (pcContainsC)
+			{
+				cursorsToDelete.insert(c);
+			}
+			else if (pcContainsStartOfC)
+			{
+				mState.mCursors[pc].mSelectionEnd = mState.mCursors[c].mSelectionEnd;
+				mState.mCursors[pc].mInteractiveEnd = mState.mCursors[c].mSelectionEnd;
+				mState.mCursors[pc].mInteractiveStart = mState.mCursors[pc].mSelectionStart;
+				mState.mCursors[pc].mCursorPosition = mState.mCursors[c].mSelectionEnd;
+				cursorsToDelete.insert(c);
+			}
+		}
+	}
+	else
+	{
+		// merge cursors if they are at the same position
+		for (int c = mState.mCurrentCursor; c > 0; c--)// iterate backwards through pairs
+		{
+			int pc = c - 1;
+			if (mState.mCursors[pc].mCursorPosition == mState.mCursors[c].mCursorPosition)
+				cursorsToDelete.insert(c);
+		}
+	}
+	for (int c = mState.mCurrentCursor; c > -1; c--)// iterate backwards through each of them
+	{
+		if (cursorsToDelete.find(c) != cursorsToDelete.end())
+			mState.mCursors.erase(mState.mCursors.begin() + c);
+	}
+	mState.mCurrentCursor -= cursorsToDelete.size();
 }
 
 
