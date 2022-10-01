@@ -382,14 +382,7 @@ public:
 		void Redo(TextEditor* aEditor);
 
 		std::vector<Selection> mAdded;
-		//std::string mAdded;
-		//Coordinates mAddedStart;
-		//Coordinates mAddedEnd;
-
 		std::vector<Selection> mRemoved;
-		//std::string mRemoved;
-		//Coordinates mRemovedStart;
-		//Coordinates mRemovedEnd;
 
 		EditorState mBefore;
 		EditorState mAfter;
