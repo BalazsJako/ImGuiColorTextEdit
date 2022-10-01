@@ -852,7 +852,7 @@ ImU32 TextEditor::GetGlyphColor(const Glyph & aGlyph) const
 
 void TextEditor::HandleKeyboardInputs()
 {
-	if (ImGui::IsWindowFocused())
+	if (ImGui::IsWindowFocused() || ImGui::IsRootWindowFocused())
 	{
 		if (ImGui::IsWindowHovered())
 			ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
@@ -1182,7 +1182,7 @@ void TextEditor::Render()
 			}
 			if (cursorCoordsInThisLine.size() > 0)
 			{
-				auto focused = ImGui::IsWindowFocused();
+				auto focused = ImGui::IsWindowFocused() || ImGui::IsRootWindowFocused();
 
 				// Highlight the current line (where the cursor is)
 				if (!HasSelection())
