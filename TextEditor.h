@@ -268,7 +268,7 @@ public:
 	{
 		for (int c = 0; c <= mState.mCurrentCursor; c++)
 		{
-			if (mState.mCursors[c].mCursorPosition.mLine > aLastLineIndex)
+			if (mState.mCursors[c].mCursorPosition.mLine >= aLastLineIndex)
 				mState.mCursors[c].mCursorPosition.mLine -= aLastLineIndex - aFirstLineIndex;
 		}
 	}
