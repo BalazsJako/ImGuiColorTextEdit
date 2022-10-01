@@ -1053,7 +1053,6 @@ void TextEditor::HandleMouseInputs()
 				mState.mCursors[mState.mCurrentCursor].mInteractiveEnd = mState.mCursors[mState.mCurrentCursor].mSelectionEnd;
 				mState.mCursors[mState.mCurrentCursor].mInteractiveStart = mState.mCursors[mState.mCurrentCursor].mSelectionStart;
 				mState.mCursors[mState.mCurrentCursor].mCursorPosition = newSelection;
-				mState.mCursors[mState.mCurrentCursor].mCursorPositionChanged = oldCursorPosition != newSelection;
 			}
 		}
 	}
