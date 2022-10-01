@@ -2067,7 +2067,7 @@ void TextEditor::Delete(bool aWordMode)
 	else
 	{
 		std::vector<Coordinates> positions;
-		for (int c = mState.mCurrentCursor; c > -1; c--)
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
 		{
 			auto pos = GetActualCursorCoordinates(c);
 			positions.push_back(pos);
@@ -2086,6 +2086,15 @@ void TextEditor::Delete(bool aWordMode)
 
 				auto& nextLine = mLines[pos.mLine + 1];
 				AddGlyphsToLine(pos.mLine, line.size(), nextLine.begin(), nextLine.end());
+				for (int otherCursor = c + 1;
+					otherCursor <= mState.mCurrentCursor && mState.mCursors[otherCursor].mCursorPosition.mLine == pos.mLine + 1;
+					otherCursor++) // move up cursors in next line
+				{
+					int otherCursorCharIndex = GetCharacterIndex(mState.mCursors[otherCursor].mCursorPosition);
+					int otherCursorNewCharIndex = GetCharacterIndex(pos) + otherCursorCharIndex;
+					auto targetCoords = Coordinates(pos.mLine, GetCharacterColumn(pos.mLine, otherCursorNewCharIndex));
+					SetCursorPosition(targetCoords, otherCursor);
+				}
 				RemoveLine(pos.mLine + 1);
 			}
 			else
@@ -2145,7 +2154,7 @@ void TextEditor::Backspace(bool aWordMode)
 	}
 	else
 	{
-		for (int c = mState.mCurrentCursor; c > -1; c--)
+		for (int c = 0; c <= mState.mCurrentCursor; c++)
 		{
 			auto pos = GetActualCursorCoordinates(c);
 			SetCursorPosition(pos, c);
@@ -2161,14 +2170,17 @@ void TextEditor::Backspace(bool aWordMode)
 				u.mRemoved.push_back({ "\n", startCoords, endCoords });
 
 				auto& line = mLines[mState.mCursors[c].mCursorPosition.mLine];
-				auto& prevLine = mLines[mState.mCursors[c].mCursorPosition.mLine - 1];
-				auto prevSize = GetLineMaxColumn(mState.mCursors[c].mCursorPosition.mLine - 1);
-				AddGlyphsToLine(mState.mCursors[c].mCursorPosition.mLine - 1, prevLine.size(), line.begin(), line.end());
+				int prevLineIndex = mState.mCursors[c].mCursorPosition.mLine - 1;
+				auto& prevLine = mLines[prevLineIndex];
+				auto prevSize = GetLineMaxColumn(prevLineIndex);
+				AddGlyphsToLine(prevLineIndex, prevLine.size(), line.begin(), line.end());
 				for (int otherCursor = c + 1;
 					otherCursor <= mState.mCurrentCursor && mState.mCursors[otherCursor].mCursorPosition.mLine == mState.mCursors[c].mCursorPosition.mLine;
 					otherCursor++) // move up cursors in same line
 				{
-					auto targetCoords = Coordinates(mState.mCursors[c].mCursorPosition.mLine - 1, prevSize + mState.mCursors[otherCursor].mCursorPosition.mColumn);
+					int otherCursorCharIndex = GetCharacterIndex(mState.mCursors[otherCursor].mCursorPosition);
+					int otherCursorNewCharIndex = GetCharacterIndex({ prevLineIndex, prevSize }) + otherCursorCharIndex;
+					auto targetCoords = Coordinates(prevLineIndex, GetCharacterColumn(prevLineIndex, otherCursorNewCharIndex));
 					SetCursorPosition(targetCoords, otherCursor);
 				}
 
