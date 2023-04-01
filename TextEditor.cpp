@@ -6,8 +6,14 @@
 
 #include "TextEditor.h"
 
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
 #define IMGUI_DEFINE_MATH_OPERATORS
+#endif
 #include "imgui.h" // for imGui::GetCurrentWindow()
+
+#ifndef isascii
+#define isascii(a) ((unsigned)(a) < 128)
+#endif
 
 // TODO
 // - multiline comments vs single-line: latter is blocking start of a ML
@@ -1081,7 +1087,7 @@ void TextEditor::Render()
 		}
 
 		// Draw a tooltip on known identifiers/preprocessor symbols
-		if (ImGui::IsMousePosValid())
+		if (ImGui::IsMousePosValid() && ImGui::IsWindowHovered())
 		{
 			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
 			if (!id.empty())
@@ -1132,7 +1138,8 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	if (mHandleKeyboardInputs)
 	{
 		HandleKeyboardInputs();
-		ImGui::PushAllowKeyboardFocus(true);
+		// tofix
+		//ImGui::PushAllowKeyboardFocus(true);
 	}
 
 	if (mHandleMouseInputs)
@@ -1141,8 +1148,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 	ColorizeInternal();
 	Render();
 
-	if (mHandleKeyboardInputs)
-		ImGui::PopAllowKeyboardFocus();
+	// tofix
+	//if (mHandleKeyboardInputs)
+	//	ImGui::PopAllowKeyboardFocus();
 
 	if (!mIgnoreImGuiChild)
 		ImGui::EndChild();
