@@ -2232,7 +2232,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 					hasTokenizeResult = true;
 			}
 
-			if (hasTokenizeResult == false)
+			if (!hasTokenizeResult)
 			{
 				// todo : remove
 				//printf("using regex for %.*s\n", first + 10 < last ? 10 : int(last - first), first);
@@ -2252,7 +2252,7 @@ void TextEditor::ColorizeRange(int aFromLine, int aToLine)
 				}
 			}
 
-			if (hasTokenizeResult == false)
+			if (!hasTokenizeResult)
 			{
 				first++;
 			}
@@ -2376,13 +2376,15 @@ void TextEditor::ColorizeInternal()
 						auto& startStr = mLanguageDefinition.mCommentStart;
 						auto& singleStartStr = mLanguageDefinition.mSingleLineComment;
 
-						if (!withinSingleLineComment && currentIndex + startStr.size() <= line.size() &&
+						if (!withinSingleLineComment &&
+                            !startStr.empty() &&
+                            currentIndex + startStr.size() <= line.size() &&
 							equals(startStr.begin(), startStr.end(), from, from + startStr.size(), pred))
 						{
 							commentStartLine = currentLine;
 							commentStartIndex = currentIndex;
 						}
-						else if (singleStartStr.size() > 0 &&
+						else if (!singleStartStr.empty() &&
 							currentIndex + singleStartStr.size() <= line.size() &&
 							equals(singleStartStr.begin(), singleStartStr.end(), from, from + singleStartStr.size(), pred))
 						{
@@ -2395,7 +2397,8 @@ void TextEditor::ColorizeInternal()
 						line[currentIndex].mComment = withinSingleLineComment;
 
 						auto& endStr = mLanguageDefinition.mCommentEnd;
-						if (currentIndex + 1 >= (int)endStr.size() &&
+						if (!endStr.empty() &&
+                            currentIndex + 1 >= (int)endStr.size() &&
 							equals(endStr.begin(), endStr.end(), from + 1 - endStr.size(), from + 1, pred))
 						{
 							commentStartIndex = endIndex;
@@ -2660,7 +2663,7 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 		p++;
 	}
 
-	if (hasNumber == false)
+	if (!hasNumber)
 		return false;
 
 	bool isFloat = false;
@@ -2702,7 +2705,7 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 		}
 	}
 
-	if (isHex == false && isBinary == false)
+	if (!isHex && !isBinary)
 	{
 		// floating point exponent
 		if (p < in_end && (*p == 'e' || *p == 'E'))
@@ -2723,7 +2726,7 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 				p++;
 			}
 
-			if (hasDigits == false)
+			if (!hasDigits)
 				return false;
 		}
 
@@ -2732,7 +2735,7 @@ static bool TokenizeCStyleNumber(const char * in_begin, const char * in_end, con
 			p++;
 	}
 
-	if (isFloat == false)
+	if (!isFloat)
 	{
 		// integer size type
 		while (p < in_end && (*p == 'u' || *p == 'U' || *p == 'l' || *p == 'L'))
