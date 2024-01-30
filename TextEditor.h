@@ -265,6 +265,11 @@ public:
 	int GetUndoIndex() const;
 	size_t GetUndoBufferSize() const;
 
+	void MarkSaved();
+	void MarkUnsaved();
+	void MarkSaved(bool saveState);
+	bool IsSaved() const;
+
 	static const Palette& GetDarkPalette();
 	static const Palette& GetLightPalette();
 	static const Palette& GetRetroBluePalette();
@@ -389,4 +394,9 @@ private:
 	uint64_t mStartTime;
 
 	float mLastClick;
+	
+	bool mSaveState;
+	bool mMarkedUnsaved;
+	int mUndoIndexFirstEdit;
+	int mUndoIndexLastSave;
 };
