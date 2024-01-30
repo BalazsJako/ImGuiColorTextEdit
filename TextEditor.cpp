@@ -1985,6 +1985,14 @@ bool TextEditor::CanUndo() const
 {
 	return !mReadOnly && mUndoIndex > 0;
 }
+int TextEditor::GetUndoIndex() const
+{
+	return mUndoIndex;
+}
+size_t TextEditor::GetUndoBufferSize() const
+{
+	return mUndoBuffer.size();
+}
 
 bool TextEditor::CanRedo() const
 {
