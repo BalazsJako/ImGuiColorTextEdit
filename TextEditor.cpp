@@ -1915,7 +1915,7 @@ void TextEditor::Backspace()
 			--u.mRemovedStart.mColumn;
 
 			if (line[cindex].mChar == '\t')
-				mState.mCursorPosition.mColumn -= mTabSize;
+				mState.mCursorPosition.mColumn -= (pos.mColumn % mTabSize);;
 			else
 				--mState.mCursorPosition.mColumn;
 
