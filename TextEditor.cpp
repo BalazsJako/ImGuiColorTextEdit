@@ -1139,7 +1139,7 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder, b
 		HandleMouseInputs();
 
 	ColorizeInternal();
-	Render(showLineNumbers); // pass showLineNumbers as argument
+	Render("TextEditor", ImVec2(0,0), false, showLineNumbers);
 
 	if (mHandleKeyboardInputs)
 		ImGui::PopTabStop();
