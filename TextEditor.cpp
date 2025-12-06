@@ -51,6 +51,8 @@ TextEditor::TextEditor()
 	SetPalette(GetDarkPalette());
 	SetLanguageDefinition(LanguageDefinition::HLSL());
 	mLines.push_back(Line());
+	
+	MarkSaved();
 }
 
 TextEditor::~TextEditor()
@@ -317,7 +319,13 @@ void TextEditor::AddUndo(UndoRecord& aValue)
 
 	mUndoBuffer.resize((size_t)(mUndoIndex + 1));
 	mUndoBuffer.back() = aValue;
+
+	if(mUndoIndex < mUndoIndexFirstEdit)
+		mUndoIndexFirstEdit = mUndoIndex;
+
 	++mUndoIndex;
+
+	mSaveState = false;
 }
 
 TextEditor::Coordinates TextEditor::ScreenPosToCoordinates(const ImVec2& aPosition) const
@@ -1171,6 +1179,7 @@ void TextEditor::SetText(const std::string & aText)
 	}
 
 	mTextChanged = true;
+	MarkSaved();
 	mScrollToTop = true;
 
 	mUndoBuffer.clear();
@@ -1202,6 +1211,7 @@ void TextEditor::SetTextLines(const std::vector<std::string> & aLines)
 	}
 
 	mTextChanged = true;
+	MarkSaved();
 	mScrollToTop = true;
 
 	mUndoBuffer.clear();
@@ -1984,6 +1994,14 @@ bool TextEditor::CanUndo() const
 {
 	return !mReadOnly && mUndoIndex > 0;
 }
+int TextEditor::GetUndoIndex() const
+{
+	return mUndoIndex;
+}
+size_t TextEditor::GetUndoBufferSize() const
+{
+	return mUndoBuffer.size();
+}
 
 bool TextEditor::CanRedo() const
 {
@@ -1994,12 +2012,52 @@ void TextEditor::Undo(int aSteps)
 {
 	while (CanUndo() && aSteps-- > 0)
 		mUndoBuffer[--mUndoIndex].Undo(this);
+
+	if(mUndoIndex == mUndoIndexLastSave){
+		if(mUndoIndexFirstEdit >= mUndoIndexLastSave && !mMarkedUnsaved)
+			mSaveState = true;
+	} else
+		mSaveState = false;
 }
 
 void TextEditor::Redo(int aSteps)
 {
 	while (CanRedo() && aSteps-- > 0)
 		mUndoBuffer[mUndoIndex++].Redo(this);
+
+	if(mUndoIndex == mUndoIndexLastSave){
+		if(mUndoIndexFirstEdit >= mUndoIndexLastSave && !mMarkedUnsaved)
+			mSaveState = true;
+	} else
+		mSaveState = false;
+}
+
+void TextEditor::MarkSaved()
+{
+	mSaveState = true;
+	mMarkedUnsaved = false;
+	mUndoIndexLastSave = mUndoIndex;
+	mUndoIndexFirstEdit = mUndoIndex;
+}
+
+// Marks the file changed in a way that can't be reverted with undo/redo
+void TextEditor::MarkUnsaved()
+{
+	mSaveState = false;
+	mMarkedUnsaved = true;
+}
+void TextEditor::MarkSaved(bool saveState)
+{
+	if(saveState){
+		mUndoIndexLastSave = mUndoIndex;
+		mUndoIndexFirstEdit = mUndoIndex;
+	} else
+		mMarkedUnsaved = true;
+	mSaveState = saveState;
+	mMarkedUnsaved = !saveState;
+}
+bool TextEditor::IsSaved() const{
+	return mSaveState;
 }
 
 const TextEditor::Palette & TextEditor::GetDarkPalette()
