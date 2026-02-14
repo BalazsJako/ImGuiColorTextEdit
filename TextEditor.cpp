@@ -3022,6 +3022,75 @@ const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::CPlusPlus(
 	return langDef;
 }
 
+const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::Python()
+{
+    static bool inited = false;
+    static LanguageDefinition langDef;
+
+    if (!inited)
+    {
+        // Python Keywords
+        static const char* const keywords[] = {
+            "False", "None", "True", "and", "as", "assert", "async", "await", "break", "class",
+            "continue", "def", "del", "elif", "else", "except", "finally", "for", "from",
+            "global", "if", "import", "in", "is", "lambda", "nonlocal", "not", "or", "pass",
+            "raise", "return", "try", "while", "with", "yield"
+        };
+
+        for (auto& k : keywords)
+            langDef.mKeywords.insert(k);
+
+        // Python Built-in Functions and Constants
+        static const char* const identifiers[] = {
+            "abs", "all", "any", "ascii", "bin", "bool", "breakpoint", "bytearray", "bytes",
+            "callable", "chr", "classmethod", "compile", "complex", "delattr", "dict", "dir",
+            "divmod", "enumerate", "eval", "exec", "filter", "float", "format", "frozenset",
+            "getattr", "globals", "hasattr", "hash", "help", "hex", "id", "input", "int",
+            "isinstance", "issubclass", "iter", "len", "list", "locals", "map", "max",
+            "memoryview", "min", "next", "object", "oct", "open", "ord", "pow", "print",
+            "property", "range", "repr", "reversed", "round", "set", "setattr", "slice",
+            "sorted", "staticmethod", "str", "sum", "super", "tuple", "type", "vars", "zip",
+            "__import__", "self", "cls"
+        };
+
+        for (auto& k : identifiers)
+        {
+            Identifier id;
+            id.mDeclaration = "Built-in function";
+            langDef.mIdentifiers.insert(std::make_pair(std::string(k), id));
+        }
+
+        // Token Regex Definitions
+        // Strings: Handles single quotes, double quotes, and raw strings (r"")
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("r?\\\"(\\\\.|[^\\\"])*\\\"", PaletteIndex::String));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("r?\\'(\\\\.|[^\\'])*\\'", PaletteIndex::String));
+
+        // Numbers: Hex, Binary, and Decimals
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[xX][0-9a-fA-F]+", PaletteIndex::Number));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("0[bB][01]+", PaletteIndex::Number));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[+-]?([0-9]+([.][0-9]*)?|[.][0-9]+)([eE][+-]?[0-9]+)?", PaletteIndex::Number));
+
+        // Identifiers and Punctuation
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[a-zA-Z_][a-zA-Z0-9_]*", PaletteIndex::Identifier));
+        langDef.mTokenRegexStrings.push_back(std::make_pair<std::string, PaletteIndex>("[\\[\\]\\{\\}\\!\\%\\^\\&\\*\\(\\)\\-\\+\\=\\~\\|\\<\\>\\?\\/\\;\\,\\.\\:\\@]", PaletteIndex::Punctuation));
+
+        // Comments
+        langDef.mSingleLineComment = "#";
+
+        // Python doesn't have true block comments, but triple quotes are often used (For documentation)
+        langDef.mCommentStart = "\"\"\"";
+        langDef.mCommentEnd = "\"\"\"";
+
+        langDef.mCaseSensitive = true;
+        langDef.mAutoIndentation = true;
+
+        langDef.mName = "Python";
+
+        inited = true;
+    }
+    return langDef;
+}
+
 const TextEditor::LanguageDefinition& TextEditor::LanguageDefinition::HLSL()
 {
 	static bool inited = false;
