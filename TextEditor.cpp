@@ -1149,7 +1149,7 @@ void TextEditor::Render()
 	}
 
 
-	ImGui::Dummy(ImVec2((longest + 2), mLines.size() * mCharAdvance.y));
+	ImGui::Dummy(ImVec2((longest + 2 + 4.0f * mCharAdvance.x), mLines.size() * mCharAdvance.y));
 
 	if (mScrollToCursor)
 	{
@@ -2479,23 +2479,23 @@ void TextEditor::EnsureCursorVisible()
 	auto height = ImGui::GetWindowHeight();
 	auto width = ImGui::GetWindowWidth();
 
-	auto top = 1 + (int)ceil(scrollY / mCharAdvance.y);
-	auto bottom = (int)ceil((scrollY + height) / mCharAdvance.y);
-
-	auto left = (int)ceil(scrollX / mCharAdvance.x);
-	auto right = (int)ceil((scrollX + width) / mCharAdvance.x);
-
 	auto pos = GetActualCursorCoordinates();
 	auto len = TextDistanceToLineStart(pos);
 
-	if (pos.mLine < top)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine - 1) * mCharAdvance.y));
-	if (pos.mLine > bottom - 4)
-		ImGui::SetScrollY(std::max(0.0f, (pos.mLine + 4) * mCharAdvance.y - height));
-	if (len + mTextStart < left + 4)
-		ImGui::SetScrollX(std::max(0.0f, len + mTextStart - 4));
-	if (len + mTextStart > right - 4)
-		ImGui::SetScrollX(std::max(0.0f, len + mTextStart + 4 - width));
+	float padX = std::min(4.0f * mCharAdvance.x, width * 0.25f);
+	
+	float cursorPosY = pos.mLine * mCharAdvance.y;
+	float cursorPosX = len + mTextStart;
+	
+	if (cursorPosY < scrollY)
+		ImGui::SetScrollY(std::max(0.0f, cursorPosY));
+	if (cursorPosY + mCharAdvance.y > scrollY + height)
+		ImGui::SetScrollY(std::max(0.0f, cursorPosY + mCharAdvance.y - height));
+		
+	if (cursorPosX < scrollX + padX)
+		ImGui::SetScrollX(std::max(0.0f, cursorPosX - padX));
+	if (cursorPosX > scrollX + width - padX)
+		ImGui::SetScrollX(std::max(0.0f, cursorPosX - width + padX));
 }
 
 int TextEditor::GetPageSize() const
