@@ -2298,17 +2298,15 @@ void TextEditor::ColorizeInternal()
 						if (currentIndex + 1 < (int)line.size() && line[currentIndex + 1].mChar == '\"')
 						{
 							currentIndex += 1;
-							if (currentIndex < (int)line.size())
-								line[currentIndex].mMultiLineComment = inComment;
+							line[currentIndex].mMultiLineComment = inComment;
 						}
 						else
 							withinString = false;
 					}
-					else if (c == '\\')
+					else if (c == '\\' && currentIndex + 1 < (int)line.size())
 					{
 						currentIndex += 1;
-						if (currentIndex < (int)line.size())
-							line[currentIndex].mMultiLineComment = inComment;
+						line[currentIndex].mMultiLineComment = inComment;
 					}
 				}
 				else
